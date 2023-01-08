@@ -14,8 +14,8 @@ val runningBots: MutableList<Bot> = mutableListOf()
 
 object YamlBot : KotlinPlugin(
     JvmPluginDescription(
-        id = "com.pigeonyuze.easy-mirai",
-        name = "Easy Mirai",
+        id = "com.pigeonyuze.yaml-bot",
+        name = "YamlBot",
         version = "1.0.0",
     ) {
         author("Pigeon_Yuze")
@@ -31,7 +31,6 @@ object YamlBot : KotlinPlugin(
 
         GlobalEventChannel.subscribeAlways<MessageEvent> {
             commandList.filter {
-                println(it.name)
                 this.message.contentToString() in it.name
             }.getOrNull(0)?.run(this)
         }
