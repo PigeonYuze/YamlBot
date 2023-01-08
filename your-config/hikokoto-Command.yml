@@ -1,0 +1,28 @@
+# 指令处理
+COMMAND: 
+  - name: 
+      - '/hikokoto'
+      - 一言
+    answeringMethod: QUOTE
+    answerContent: '『 %call-hitokoto% 』 —— %call-from%'
+    run: 
+      - use: HTTP
+        call: content
+        args: 
+          - 'https://v1.hitokoto.cn'
+        name: content
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - hitokoto
+        name: hitokoto
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - from
+        name: from
+    condition: 
+      - request: none
+        call: null
