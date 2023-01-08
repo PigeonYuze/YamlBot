@@ -275,4 +275,4 @@ condition:
 
 ***此项可以不写 不强制要求序列化 或者按照举例一样修改***
 
-
+关于调用函数方面，你可以前往[TemplateDoc](https://github.com/PigeonYuze/YamlBot/blob/069e5651ab8e83e2b91294f6308bce61a2e8d1e9/src/main/kotlin/com/pigeonyuze/template/TemplateDoc.md)获取帮助
