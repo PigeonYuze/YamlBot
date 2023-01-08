@@ -33,6 +33,7 @@ open: false
 该项如果被关闭了 那么所有关于用户的设置都会被抛出错误`IllegalStateException`
 并且提示`User does not open` 如果出现了该错误 则意味除了保存信息意外
 还有其他的函数调用了`User`的内置函数 你可以通过查看指令config进行寻找
+
 ---
 
 ```yaml
