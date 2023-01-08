@@ -12,6 +12,8 @@
 
 **请保证你的.yml文件格式是正确的 再运行本插件!**
 
+你可以将你的相关配置(如：`CommandReg.yml`) 以 `功能+原名`的方式上传到 [your-config] (https://github.com/PigeonYuze/YamlBot/tree/master/your-config)
+
 -----
 
 ## Config设置
