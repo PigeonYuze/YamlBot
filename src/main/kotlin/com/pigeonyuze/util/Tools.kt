@@ -1,11 +1,9 @@
 package com.pigeonyuze.util
 
-import net.mamoe.mirai.message.data.MessageChain
-import net.mamoe.mirai.message.data.MessageOrigin
-import net.mamoe.mirai.message.data.MessageSource
-import net.mamoe.mirai.message.data.SingleMessage
-import net.mamoe.mirai.utils.MiraiExperimentalApi
-
+import net.mamoe.yamlkt.YamlElement
+import net.mamoe.yamlkt.YamlList
+import net.mamoe.yamlkt.YamlMap
+import net.mamoe.yamlkt.YamlPrimitive
 
 
 fun String.listToStringDataToList(dropStart: Int = 1): List<String> {
@@ -78,31 +76,43 @@ fun String.keyAndValueStringDataToMap(drop: Int = 0): Map<String, String> {
     return ret
 }
 
-@OptIn(MiraiExperimentalApi::class)
-inline fun <reified M : SingleMessage> MessageChain.onlyElement(): Boolean {
-    this.forEach {
-        if (it !is M && it !is MessageSource && it !is MessageOrigin) return false
+
+
+fun Map<*,*>.stringMap() : Map<String,String> {
+    val result = mutableMapOf<String,String>()
+    for ((k,v) in this){
+        result[k.toString()] = v.toString()
     }
-    return true
+    return result
 }
-//fun YamlElement.toAnyOrNull() : Any? =
-//    when(this){
-//        is YamlPrimitive -> this.content
-//        is YamlMap -> {
-//            val anyMap = mutableMapOf<Any,Any?>()
-//            for ((key,value) in this.content){
-//                anyMap[key.toAnyOrNull()!!] = value.toAnyOrNull()
-//            }
-//            anyMap
-//        }
-//        is YamlList -> {
-//            val anyList = mutableListOf<Any?>()
-//            for (value in this.content){
-//                anyList.add(value.toAnyOrNull())
-//            }
-//            anyList
-//        }
-//    }anyList
+
+fun List<*>.stringList() : MutableList<String>{
+    val result = mutableListOf<String>()
+    for (value in this) {
+        result.add(value.toString())
+    }
+    return result
+}
+
+
+fun YamlElement.toAnyOrNull() : Any? =
+    when(this){
+        is YamlPrimitive -> this.content
+        is YamlMap -> {
+            val anyMap = mutableMapOf<Any,Any?>()
+            for ((key,value) in this.content){
+                anyMap[key.toAnyOrNull()!!] = value.toAnyOrNull()
+            }
+            anyMap
+        }
+        is YamlList -> {
+            val anyList = mutableListOf<Any?>()
+            for (value in this.content){
+                anyList.add(value.toAnyOrNull())
+            }
+            anyList
+        }
+    }
 
 fun String.isLong() = this.toLongOrNull() != null
 

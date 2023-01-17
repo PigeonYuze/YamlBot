@@ -1,18 +1,10 @@
 package com.pigeonyuze.util
 
-import net.mamoe.mirai.event.events.MessageEvent
-
 
 @MustBeDocumented
 @Target(AnnotationTarget.CLASS)
 annotation class FunctionArgsSize(
     val sizes : IntArray
-)
-
-@MustBeDocumented
-@Target(AnnotationTarget.CLASS)
-annotation class FunctionComment(
-    val comment : String
 )
 
 @Repeatable
@@ -35,11 +27,4 @@ annotation class SerializerData(val buildIndex: Int, val serializerJSONType: Ser
         COMMAND_ID
     }
 
-
-    /**
-     * 任何`serializerJSONType`为[SerializerType.EVENT_ALL]的都应该继承此类
-     * */
-    interface EventAllRun{
-        suspend fun eventExecuteRun(args: List<String>,event: MessageEvent) : Any
-    }
 }

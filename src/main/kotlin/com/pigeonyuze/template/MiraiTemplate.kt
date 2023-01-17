@@ -2,10 +2,8 @@ package com.pigeonyuze.template
 
 import com.pigeonyuze.BotsTool
 import com.pigeonyuze.YamlBot
-import com.pigeonyuze.command.Command.Companion.toMiraiMessage
 import com.pigeonyuze.command.illegalArgument
 import com.pigeonyuze.runConfigsReload
-import com.pigeonyuze.template.Template.Companion.noImpl
 import com.pigeonyuze.util.FunctionArgsSize
 import com.pigeonyuze.util.SerializerData
 import io.github.kasukusakura.silkcodec.AudioToSilkCoder
@@ -30,7 +28,7 @@ import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
 object MiraiTemplate : Template {
-    override suspend fun callValue(functionName: String, args: List<String>): Any {
+    override suspend fun callValue(functionName: String, args: Parameter): Any {
         return MiraiTemplateImpl.findFunction(functionName)!!.execute(args)
     }
 
@@ -70,16 +68,16 @@ object MiraiTemplate : Template {
         }
 
 
-        override suspend fun execute(args: List<String>): K
+        override suspend fun execute(args: Parameter): K
         override val type: KClass<K>
         override val name: String
 
         @SerializerData(2,SerializerData.SerializerType.SUBJECT_ID)
         object UploadFunction : MiraiTemplateImpl<Message>{
-            override suspend fun execute(args: List<String>) : Message{
+            override suspend fun execute(args: Parameter) : Message{
                 return when (args.size) {
-                    2 -> upload(args[0], args[1].toLong())
-                    3 -> upload(args[0], args[1], args[2].toLong())
+                    2 -> upload(args[0], args.getLong(1))
+                    3 -> upload(args[0], args[1], args.getLong(2))
                     else -> error(name, args.size)
                 }
             }
@@ -146,10 +144,10 @@ object MiraiTemplate : Template {
         @FunctionArgsSize([1, 2])
         @SerializerData(2, SerializerData.SerializerType.SUBJECT_ID)
         object SendFunction : MiraiTemplateImpl<Unit> {
-            override suspend fun execute(args: List<String>) {
+            override suspend fun execute(args: Parameter) {
                 when (args.size) {
-                    2 -> send(args[0], args[1].toLong())
-                    3 -> send(args[0], args[1], args[2].toLong())
+                    2 -> send(args[0], args.getLong(1))
+                    3 -> send(args[0], args[1], args.getLong(2))
                     else -> error(name, args.size)
                 }
             }
@@ -165,7 +163,7 @@ object MiraiTemplate : Template {
                     "audio" -> Audio
                     else -> error("$type is not a valid type")
                 }
-                val message = UploadFunction.execute(listOf(path, type, group.toString()))
+                val message = UploadFunction.execute(parameterOf(path, type, group.toString()))
                 val subject = BotsTool.getGroupOrNull(group)!!
                 when (settingType) {
                     Image ->
@@ -192,13 +190,13 @@ object MiraiTemplate : Template {
         @SerializerData(1, SerializerData.SerializerType.SUBJECT_ID)
         @FunctionArgsSize([0, 1, 2])
         object DownlandFunction : MiraiTemplateImpl<String> {
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
                 return when (args.size) {
-                    2 -> save(message = args[0].toMiraiMessage(), group = args[1].toLong())
-                    3 -> save(message = args[0].toMiraiMessage(), group = args[1].toLong(), saveName = args[2])
+                    2 -> save(message = args.getMessage(0), group = args.getLong(1))
+                    3 -> save(message = args.getMessage(0), group = args.getLong(1), saveName = args[2])
                     4 -> save(
-                        message = args[0].toMiraiMessage(),
-                        group = args[1].toLong(),
+                        message = args.getMessage(0),
+                        group = args.getLong(1),
                         saveName = args[2],
                         downlandObject = args[3]
                     )
@@ -232,7 +230,7 @@ object MiraiTemplate : Template {
                     else -> error("Cannot find $downlandObject")
                 }
 
-                return HttpTemplate.call("downland", listOf(url, savePath)) as String
+                return HttpTemplate.call("downland", parameterOf(url, savePath)) as String
             }
 
 
@@ -243,19 +241,11 @@ object MiraiTemplate : Template {
         }
 
         @FunctionArgsSize([1])
-        @SerializerData(0, SerializerData.SerializerType.EVENT_ALL)
-        object EventValueFunction : MiraiTemplateImpl<Any>, SerializerData.EventAllRun {
-            @Deprecated(
-                message = "该方法不应该被直接调用",
-                replaceWith = ReplaceWith("eventExecuteRun"),
-                level = DeprecationLevel.HIDDEN
-            )
-            override suspend fun execute(args: List<String>): Any = noImpl()
-
-
-            override suspend fun eventExecuteRun(args: List<String>, event: MessageEvent): Any {
+        @SerializerData(1, SerializerData.SerializerType.EVENT_ALL)
+        object EventValueFunction : MiraiTemplateImpl<Any>{
+            override suspend fun execute(args: Parameter): Any {
                 if (args.size != 1) error(name, args.size)
-                return value(args[0], event)
+                return value(args[0], args.getMessageEvent(1))
             }
 
             suspend fun value(callValue: String, event: MessageEvent): String {
@@ -300,8 +290,8 @@ object MiraiTemplate : Template {
         @SerializerData(0,SerializerData.SerializerType.SUBJECT_ID)
         @FunctionArgsSize([2,3])
         object GroupFilesFunction : MiraiTemplateImpl<Any>{
-            override suspend fun execute(args: List<String>): Any {
-                val group = BotsTool.getGroupOrNull(args[0].toLong()) ?: error("Cannot find group ${args[0]}!")
+            override suspend fun execute(args: Parameter): Any {
+                val group = BotsTool.getGroupOrNull(args.getLong(0)) ?: error("Cannot find group ${args[0]}!")
                 val files = group.files
                 val absoluteFileFlow = files.root.files()
                 val fileName = args[1]
@@ -339,7 +329,7 @@ object MiraiTemplate : Template {
                             "name" -> file.name
                             "downland" -> HttpTemplate.call(
                                 "downland",
-                                listOf(file.getUrl() ?: error("远程文件不存在"), arg ?: illegalArgument("未提供应该提供的参数"))
+                                parameterOf(file.getUrl() ?: error("远程文件不存在"), arg ?: illegalArgument("未提供应该提供的参数"))
                             )
                             else -> error("Cannot find function $call")
                         }
@@ -357,7 +347,7 @@ object MiraiTemplate : Template {
 
         @FunctionArgsSize([-1])
         object ReloadConfigFunction : MiraiTemplateImpl<Unit> {
-            override suspend fun execute(args: List<String>) {
+            override suspend fun execute(args: Parameter) {
                 runConfigsReload()
             }
 

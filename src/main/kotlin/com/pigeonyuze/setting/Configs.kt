@@ -4,6 +4,8 @@ package com.pigeonyuze
 import com.pigeonyuze.YamlBot.reload
 import com.pigeonyuze.account.UserElement
 import com.pigeonyuze.command.*
+import com.pigeonyuze.command.Command.*
+import com.pigeonyuze.command.YamlCommandDecoder.load
 import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.ValueDescription
 import net.mamoe.mirai.console.data.value
@@ -11,7 +13,7 @@ import net.mamoe.mirai.console.data.value
 
 fun runConfigsReload()  {
     UserConfig.reload()
-    CommandConfigs.reload()
+    CommandConfigs.load()
 }
 
 
@@ -49,12 +51,23 @@ object UserConfig : AutoSavePluginConfig("UserConfig"){
     val otherElements : MutableList<UserElement> by value(mutableListOf(UserElement("regDate","date","new")))
 
 }
+
+@kotlinx.serialization.Serializable
+/**
+ * 对[Command]的包装 由此实现序列化的多态化
+ * */
+internal class CommandPolymorphism(
+    val value: Command
+)
+
+internal fun Command.toPolymorphismObject() = CommandPolymorphism(this)
+
 @ValueDescription("指令注册")
-object CommandConfigs : AutoSavePluginConfig("CommandReg"){
+object CommandConfigs : AutoSavePluginConfig(YamlCommandDecoder.saveName){
     @ValueDescription("指令处理")
-    val COMMAND: List<Command> by value(
+    internal var COMMAND: List<CommandPolymorphism> by value(
         listOf(
-            Command(
+            NormalCommand(
                 name = listOf("test"),
                 answeringMethod = AnsweringMethod.QUOTE,
                 answerContent = """
@@ -62,18 +75,30 @@ object CommandConfigs : AutoSavePluginConfig("CommandReg"){
                 this is a test message!
             """.trimIndent(),
                 run = listOf(),
-                condition = listOf(Condition(Condition.JudgmentMethod.NONE, null)),
-            ),
-            Command(
+            ).toPolymorphismObject(),
+            NormalCommand(
                 name = listOf("/hikokoto"),
                 answeringMethod = AnsweringMethod.QUOTE,
                 answerContent = "『 %call-hitokoto% 』 —— %call-from%",
-                run = listOf(TemplateYML(ImportType.HTTP, "content", listOf("https://v1.hitokoto.cn"), name = "content"),
+                run = listOf(TemplateYML(ImportType.HTTP, "content",
+                    listOf("https://v1.hitokoto.cn"), name = "content"),
                     TemplateYML(ImportType.BASE,"parseJson", listOf("%call-content%","hitokoto"),"hitokoto"),
                     TemplateYML(ImportType.BASE,"parseJson", listOf("%call-content%","from"),"from")
                 ),
-                condition = listOf(Condition(Condition.JudgmentMethod.NONE, null)),
-            )
+            ).toPolymorphismObject(),
+            OnlyRunCommand(
+                name = listOf("/run"),
+                condition = listOf(),
+                run = listOf()
+            ).toPolymorphismObject(),
+            ArgCommand(
+                name = listOf("/arg"),
+                answeringMethod = AnsweringMethod.QUOTE,
+                answerContent = "『 %call-arg1% 』 —— %call-arg2%",
+                argsSize = 2,
+                condition = listOf(),
+                run = listOf()
+            ).toPolymorphismObject()
         )
 
     )

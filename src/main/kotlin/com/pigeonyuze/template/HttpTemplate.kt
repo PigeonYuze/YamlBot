@@ -4,7 +4,6 @@ import com.pigeonyuze.YamlBot
 import com.pigeonyuze.com.pigeonyuze.LoggerManager
 import com.pigeonyuze.util.FunctionArgsSize
 import com.pigeonyuze.util.dropFirstAndLast
-import com.pigeonyuze.util.keyAndValueStringDataToMap
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -17,7 +16,7 @@ import java.util.*
 import kotlin.reflect.KClass
 
 object HttpTemplate : Template {
-    override suspend fun callValue(functionName: String, args: List<String>): Any {
+    override suspend fun callValue(functionName: String, args: Parameter): Any {
         return HttpTemplateImpl.findFunction(functionName)!!.execute(args)
     }
 
@@ -36,7 +35,7 @@ object HttpTemplate : Template {
     private sealed interface HttpTemplateImpl<K: Any> : TemplateImpl<K>{
         override val name: String
         override val type: KClass<K>
-        override suspend fun execute(args: List<String>): K
+        override suspend fun execute(args: Parameter): K
         companion object {
             val list: List<HttpTemplateImpl<*>> = listOf(
                 DownlandFunction,
@@ -51,9 +50,8 @@ object HttpTemplate : Template {
                 for (i in (0..args)) {
                     usage.add("arg${i + 1}")
                 }
-
                 return usage.toString()
-            })
+            }.invoke())
 
             private fun httpRequest(
                 http: String,
@@ -85,11 +83,11 @@ object HttpTemplate : Template {
             override val type: KClass<String>
                 get() = String::class
 
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
                 return when(args.size) {
                     1 -> downland(args[0])
                     2 -> downland(args[0],args[1])
-                    3 -> downland(args[0],args[1],args[2].keyAndValueStringDataToMap())
+                    3 -> downland(args[0],args[1],args.getMap(2))
                     else -> error(name,args.size)
                 }
             }
@@ -120,10 +118,11 @@ object HttpTemplate : Template {
             override val type: KClass<String>
                 get() = String::class
 
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
+                println(args.size)
                 return when(args.size){
                     1 -> json(args[0])
-                    2 -> json(args[0],args[1].keyAndValueStringDataToMap())
+                    2 -> json(args[0],args.getMap(1))
                     else -> error(name,args.size)
                 }
             }
@@ -138,17 +137,17 @@ object HttpTemplate : Template {
             override val type: KClass<String>
                 get() = String::class
 
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
                 val fieldName: String
 
                 val jsonString = when (args.size) {
                     2 -> {
                         fieldName = args[1]
-                        ApiContentFunction.execute(listOf(args[0]))
+                        ApiContentFunction.execute(parameterOf(args[0]))
                     }
                     3 -> {
                         fieldName = args[2]
-                        ApiContentFunction.execute(args.subList(0, 1))
+                        ApiContentFunction.execute(args.subArgs(0, 1))
                     }
                     else -> {
                         error(name, args.size)

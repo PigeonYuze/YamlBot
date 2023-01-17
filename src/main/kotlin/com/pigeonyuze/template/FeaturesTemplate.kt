@@ -2,10 +2,10 @@ package com.pigeonyuze.template
 
 import com.pigeonyuze.BotsTool
 import com.pigeonyuze.com.pigeonyuze.LoggerManager
-import com.pigeonyuze.command.Command.Companion.toMiraiMessage
 import com.pigeonyuze.command.illegalArgument
 import com.pigeonyuze.util.SerializerData
 import com.pigeonyuze.util.SerializerData.SerializerType
+import com.pigeonyuze.util.stringList
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import net.mamoe.mirai.console.data.AutoSavePluginConfig
@@ -19,7 +19,7 @@ import javax.imageio.ImageIO
 import kotlin.reflect.KClass
 
 object FeaturesTemplate : Template {
-    override suspend fun callValue(functionName: String, args: List<String>): Any {
+    override suspend fun callValue(functionName: String, args: Parameter): Any {
         return FeaturesTemplateImpl.findFunction(functionName)!!.execute(args)
     }
 
@@ -38,7 +38,7 @@ object FeaturesTemplate : Template {
     private sealed interface FeaturesTemplateImpl<K : Any> : TemplateImpl<K>{
         override val type: KClass<K>
         override val name: String
-        override suspend fun execute(args: List<String>): K
+        override suspend fun execute(args: Parameter): K
 
         companion object{
             val list: List<FeaturesTemplateImpl<*>> = listOf(
@@ -57,7 +57,7 @@ object FeaturesTemplate : Template {
                 get() = String::class
             override val name: String
                 get() = "randomFile"
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
                 val path = args[0]
                 return File(path).listFiles()?.random()?.absolutePath ?: path
             }
@@ -71,7 +71,7 @@ object FeaturesTemplate : Template {
                 get() = "randomCutImage"
 
 
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
                 return coroutineScope {
                     async {
                         run(args)
@@ -79,7 +79,7 @@ object FeaturesTemplate : Template {
                 }.await()
             }
 
-            private fun run(args: List<String>) : String{
+            private fun run(args: Parameter) : String{
                 val inputStream = File(args[0]).inputStream()
                 val out = File(args[1]).outputStream()
                 val w = args[2].toInt()
@@ -119,9 +119,9 @@ object FeaturesTemplate : Template {
             override val name: String
                 get() = "复读"
 
-            override suspend fun execute(args: List<String>) {
-                val group = args[0].toLong()
-                BotsTool.getGroupOrNull(group)?.sendMessage(args[1].toMiraiMessage())
+            override suspend fun execute(args: Parameter) {
+                val group = args.getLong(0)
+                BotsTool.getGroupOrNull(group)?.sendMessage(args.getMessage(1))
             }
 
         }
@@ -142,8 +142,8 @@ object FeaturesTemplate : Template {
             // arg[0] : save with sender id
             // arg[1] : save with id
             // arg[2] : type(put or set or read)
-            // arg[3,or more] : save data.. may is null
-            override suspend fun execute(args: List<String>) : Any {
+            // arg[3] : save data.. may is null
+            override suspend fun execute(args: Parameter) : Any {
                 val commandHashCode = args[1]
                 val target = args[0].toLong()
                 if (hashCode_ == -1) {
@@ -155,10 +155,10 @@ object FeaturesTemplate : Template {
                 val saveData = args.subList(3,args.lastIndex)
                 when (args[2]) {
                     "read" -> {
-                        return Save.saveData[target]?._data ?: "null"
+                        return Save.saveData[target]?.data ?: "null"
                     }
                     "put" -> {
-                        Save.saveData[target] = SaveObject(target, saveData)
+                        Save.saveData[target] = SaveObject(target, saveData.stringList())
                         return saveData
                     }
                     "set" -> {
@@ -167,13 +167,13 @@ object FeaturesTemplate : Template {
                                 "DataSet",
                                 "No object to be modified was found in the data store of information $hashCode_,created automatically.  at target:$target"
                             )
-                            Save.saveData[target] = SaveObject(target, saveData)
+                            Save.saveData[target] = SaveObject(target, saveData.stringList())
                             return false
                         }
 
                         for ((index, data) in saveData.withIndex()) {
                             if (data == "null") continue
-                            oldData[index] = data
+                            oldData[index] = data.toString()
                         }
                         return true
                     }
@@ -194,13 +194,9 @@ object FeaturesTemplate : Template {
                 val target: Long,
 
                 @get:JvmName("getOnlyReadData")
-                val data: List<String>
+                val data: MutableList<String>
             ){
-                @get:JvmName("getData")
-                @kotlinx.serialization.Transient
-                val _data = data.toMutableList()
-
-                operator fun set(index: Int,newValue: String) = _data.set(index,newValue)
+                operator fun set(index: Int,newValue: String) = data.set(index,newValue)
             }
 
         }

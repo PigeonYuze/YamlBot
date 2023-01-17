@@ -11,7 +11,7 @@ import java.util.*
 import kotlin.reflect.KClass
 
 object UserTemplate : Template {
-    override suspend fun callValue(functionName: String, args: List<String>): Any {
+    override suspend fun callValue(functionName: String, args: Parameter): Any {
         return UserTemplateImpl.findFunction(functionName)!!.execute(args)
     }
 
@@ -48,13 +48,13 @@ object UserTemplate : Template {
                     usage.add("arg${i + 1}")
                 }
                 return usage.toString()
-            })
+            }.invoke())
 
         }
 
         override val name: String
         override val type: KClass<K>
-        override suspend fun execute(args: List<String>): K
+        override suspend fun execute(args: Parameter): K
 
         @FunctionArgsSize([2])
         @SerializerData(1,SerializerData.SerializerType.SENDER_ID)
@@ -64,10 +64,10 @@ object UserTemplate : Template {
             override val type: KClass<String>
                 get() = String::class
 
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
                 return when(args.size) {
-                    2 -> value(args[0],args[1].toLong())
-                    3 -> value(args[0],args[2].toLong())
+                    2 -> value(args[0], args.getLong(1))
+                    3 -> value(args[0], args.getLong(2))
                     else ->error(name,args.size)
                 }
             }
@@ -89,7 +89,7 @@ object UserTemplate : Template {
             override val type: KClass<Boolean>
                 get() = Boolean::class
 
-            override suspend fun execute(args: List<String>): Boolean {
+            override suspend fun execute(args: Parameter): Boolean {
                 if (args.size != 3) error(name, args.size)
                 return reg(
                     when (UserConfig.userNickSource) {
@@ -116,22 +116,22 @@ object UserTemplate : Template {
             override val type: KClass<Unit>
                 get() = Unit::class
 
-            override suspend fun execute(args: List<String>) {
+            override suspend fun execute(args: Parameter) {
                 when(args.size){ //以下逻辑比较复杂 我也很难整明白 你看注释就行 by Pigeon_Yuze.
                     4 -> {
                         //args: (name) (forAllUserRun) (newValue) ($auto-plus--sender_id$)
-                        if (args[1].isBoolean()) set(args[0],args[2],args[1].toBoolean())
+                        if (args[1].isBoolean()) set(args[0],args[2],args.getBoolean(1))
                         //args: (name) (object-qqid) (newValue) ($auto-plus--sender_id$)
-                        else set(args[0],args[1].toLong(),args[2])
+                        else set(args[0],args.getLong(1),args[2])
                     }
                     3 -> {
                         //args: (name) (object-qqid) ($auto-plus--sender_id$) -> init
-                        if (args[1].isLong()) set(args[0],args[1].toLong())
+                        if (args[1].isLong()) set(args[0],args.getLong(1))
                         //args: (name) (newValue) ($auto-plus--sender_id$)
-                        else set(args[0],args[2].toLong(),args[1])
+                        else set(args[0], args.getLong(2),args[1])
                     }
                     2 -> { //args: (name) ($auto-plus--sender_id$) -> init
-                        set(args[0],args[1].toLong())
+                        set(args[0],args.getLong(1))
                     }
                     else -> { //什么都不是 不支持的参数
                         error(name,args.size)
@@ -166,21 +166,20 @@ object UserTemplate : Template {
             override val type: KClass<Unit>
                 get() = Unit::class
 
-            override suspend fun execute(args: List<String>) {
+            override suspend fun execute(args: Parameter) {
                 when(args.size){ //和上面的判断逻辑差不多 by Pigeon_Yuze.
                     4 -> {
                         //args: (name) (object-qqid) (newValue) ($auto-plus--sender_id$)
-                        plus(args[0],args[1].toLong(),args[2])
+                        plus(args[0],args.getLong(1),args[2])
                     }
                     3 -> {
                         //args: (name) (newValue) ($auto-plus--sender_id$)
-                         plus(args[0],args[2].toLong(),args[1])
+                         plus(args[0],args.getLong(2),args[1])
                     }
                     else -> {
                         error(name,args.size)
                     }
                 }
-                if (args.size != 2) error(name,args.size)
             }
 
 
@@ -198,21 +197,20 @@ object UserTemplate : Template {
             override val type: KClass<Unit>
                 get() = Unit::class
 
-            override suspend fun execute(args: List<String>) {
+            override suspend fun execute(args: Parameter) {
                 when(args.size){ //和上面的逻辑差不多 by Pigeon_Yuze.
                     4 -> {
                         //args: (name) (object-qqid) (newValue) ($auto-plus--sender_id$)
-                        minus(args[0],args[1].toLong(),args[2])
+                        minus(args[0],args.getLong(1),args[2])
                     }
                     3 -> {
                         //args: (name) (newValue) ($auto-plus--sender_id$)
-                        minus(args[0],args[2].toLong(),args[1])
+                        minus(args[0],args.getLong(2),args[1])
                     }
                     else -> {
                         error(name,args.size)
                     }
                 }
-                if (args.size != 2) error(name,args.size)
             }
 
 
@@ -229,9 +227,9 @@ object UserTemplate : Template {
             override val type: KClass<Any>
                 get() = Any::class
 
-            override suspend fun execute(args: List<String>): Any {
+            override suspend fun execute(args: Parameter): Any {
                 if (args.size < 3) error(name,args.size)
-                val senderID = args[0].toLong()
+                val senderID = args.getLong(0)
                 val inArgsExistObjectId = args[1].isLong()
                 val userElement =
                     UserData.userList.first { it.qqId == senderID }.find(if (inArgsExistObjectId) args[2] else args[1])
@@ -239,9 +237,6 @@ object UserTemplate : Template {
                 val callArgs = if (inArgsExistObjectId) args.subList(3,args.lastIndex) else args.subList(2,args.lastIndex)
                 return userElement.call(functionName,callArgs) ?: "null"
             }
-
-
-
         }
     }
 

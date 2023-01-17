@@ -9,7 +9,7 @@ import kotlin.random.Random
 import kotlin.reflect.KClass
 
 object BaseTemplate : Template {
-    override suspend fun callValue(functionName: String, args: List<String>): Any {
+    override suspend fun callValue(functionName: String, args: Parameter): Any {
         return BaseTemplateImpl.findFunction(functionName)!!.execute(args)
     }
 
@@ -29,7 +29,7 @@ object BaseTemplate : Template {
     private sealed interface BaseTemplateImpl<K : Any> : TemplateImpl<K> {
         override val name: String
         override val type: KClass<K>
-        override suspend fun execute(args: List<String>): K
+        override suspend fun execute(args: Parameter): K
 
         companion object {
 
@@ -49,11 +49,10 @@ object BaseTemplate : Template {
                     usage.add("arg${i + 1}")
                 }
                 return usage.toString()
-            })
+            }.invoke())
         }
 
         @FunctionArgsSize([-1])
-        @FunctionComment("随机获取文本")
         object RandomText : BaseTemplateImpl<String> {
 
             override val name: String
@@ -61,13 +60,12 @@ object BaseTemplate : Template {
             override val type: KClass<String>
                 get() = String::class
 
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
                 return args.random()
             }
 
         }
         @FunctionArgsSize([0,1,2,3])
-        @FunctionComment("获取随机数")
         object RandomFunction : BaseTemplateImpl<Int> {
             override val type: KClass<Int>
                 get() = Int::class
@@ -78,12 +76,12 @@ object BaseTemplate : Template {
             @ArgComment(1,["由0到参数1的随机数"])
             @ArgComment(2,["随机数的起点(包括该项)","随机数的起点(包括该项)"])
             @ArgComment(3,["随机数的起点(包括该项)","随机数的终点(包含该项)","是否包含负数(默认不包含)"])
-            override suspend fun execute(args: List<String>): Int {
+            override suspend fun execute(args: Parameter): Int {
                 return when (args.size) {
                     0 -> random()
-                    1 -> random(args[0].toInt())
-                    2 -> random(args[0].toInt(), args[1].toInt())
-                    3 -> random(args[0].toInt(), args[1].toInt(), args[2].toBoolean())
+                    1 -> random(args.getInt(0))
+                    2 -> random(args.getInt(0), args.getInt(1))
+                    3 -> random(args.getInt(0), args.getInt(1), args.getBoolean(2))
                     else -> error(name, args.size)
                 }
             }
@@ -109,12 +107,13 @@ object BaseTemplate : Template {
             override val type: KClass<String>
                 get() = String::class
 
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
                 val json = args.getOrNull(0) ?: error(name, args.size)
                 return coroutineScope {
                     async {
                         var jsonElement = Json.parseToJsonElement(json)
-                        for (arg in args.subList(1,args.size)) {
+                        for (arg in args.subList(0,args.lastIndex)) {
+                            if (arg !is String) continue
                             jsonElement = if (arg.toIntOrNull() != null) { //is number
                                 jsonElement.jsonArray.getOrNull(arg.toInt()) ?: jsonElement.jsonNull
                             } else jsonElement.jsonObject[arg]!!
@@ -136,13 +135,13 @@ object BaseTemplate : Template {
             override val type: KClass<String>
                 get() = String::class
 
-            override suspend fun execute(args: List<String>): String {
+            override suspend fun execute(args: Parameter): String {
                 return coroutineScope {
                     async { run(args) }
                 }.await()
             }
 
-            private fun run(args: List<String>): String {
+            private fun run(args: Parameter): String {
                 val jsonMap = mutableMapOf<String, JsonElement>()
                 val jsonArray = mutableListOf<JsonElement>()
                 val isMapObject: Boolean = args[0].contains("=")
@@ -199,7 +198,6 @@ object BaseTemplate : Template {
                 }else JsonPrimitive(value)
             }
         }
-
 
     }
 
