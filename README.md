@@ -12,6 +12,8 @@
 
 **请保证你的.yml文件格式是正确的 再运行本插件!**
 
+你可以将你的相关配置(如：`CommandReg.yml`) 以 `功能+原名`的方式上传到 [your config](https://github.com/PigeonYuze/YamlBot/tree/master/your-config)
+
 -----
 
 ## Config设置
@@ -31,6 +33,7 @@ open: false
 该项如果被关闭了 那么所有关于用户的设置都会被抛出错误`IllegalStateException`
 并且提示`User does not open` 如果出现了该错误 则意味除了保存信息意外
 还有其他的函数调用了`User`的内置函数 你可以通过查看指令config进行寻找
+
 ---
 
 ```yaml
@@ -276,3 +279,4 @@ condition:
 ***此项可以不写 不强制要求序列化 或者按照举例一样修改***
 
 关于调用函数方面，你可以前往[TemplateDoc](https://github.com/PigeonYuze/YamlBot/blob/069e5651ab8e83e2b91294f6308bce61a2e8d1e9/src/main/kotlin/com/pigeonyuze/template/TemplateDoc.md)获取帮助
+
