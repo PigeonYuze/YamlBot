@@ -10,6 +10,7 @@ import kotlinx.serialization.json.jsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.io.File
 import java.io.FileOutputStream
 import java.net.URLEncoder
 import java.util.*
@@ -32,10 +33,11 @@ object HttpTemplate : Template {
         return HttpTemplateImpl.list
     }
 
-    private sealed interface HttpTemplateImpl<K: Any> : TemplateImpl<K>{
+    private sealed interface HttpTemplateImpl<K : Any> : TemplateImpl<K> {
         override val name: String
         override val type: KClass<K>
         override suspend fun execute(args: Parameter): K
+
         companion object {
             val list: List<HttpTemplateImpl<*>> = listOf(
                 DownlandFunction,
@@ -57,7 +59,7 @@ object HttpTemplate : Template {
                 http: String,
                 param: Map<String, String>?,
             ): Response {
-                LoggerManager.loggingTrace("Template-http","Request call $http,param: ${param.toString()}")
+                LoggerManager.loggingTrace("Template-http", "Request call $http,param: ${param.toString()}")
                 var httpUrl = http
                 if (param != null) {
                     val stringJoiner = StringJoiner("&", "$http?", "")
@@ -76,29 +78,33 @@ object HttpTemplate : Template {
 
         }
 
-        @FunctionArgsSize([1,2,3])
-        object DownlandFunction : HttpTemplateImpl<String>{
+        @FunctionArgsSize([1, 2, 3])
+        object DownlandFunction : HttpTemplateImpl<String> {
             override val name: String
                 get() = "downland"
             override val type: KClass<String>
                 get() = String::class
 
             override suspend fun execute(args: Parameter): String {
-                return when(args.size) {
+                return when (args.size) {
                     1 -> downland(args[0])
-                    2 -> downland(args[0],args[1])
-                    3 -> downland(args[0],args[1],args.getMap(2))
-                    else -> error(name,args.size)
+                    2 -> downland(args[0], args[1])
+                    3 -> downland(args[0], args[1], args.getMap(2))
+                    else -> error(name, args.size)
                 }
             }
 
-            private fun downland(http: String): String{
-                return downland(http, "${YamlBot.dataFolderPath}/$http")
+            private fun downland(http: String): String {
+                return downland(http, "${YamlBot.dataFolderPath.resolve(http.hashCode().toString())}")
             }
 
 
-            private fun downland(http: String, saveName: String, param: Map<String,String>? = null): String{
-                LoggerManager.loggingDebug("HttpTemplate-$name","Downland $http(param: ${param.toString()}) to $saveName")
+            private fun downland(http: String, saveName: String, param: Map<String, String>? = null): String {
+                LoggerManager.loggingDebug(
+                    "HttpTemplate-$name",
+                    "Downland $http(param: ${param.toString()}) to $saveName"
+                )
+                if (File(saveName).exists()) return saveName
                 httpRequest(http, param).body!!.byteStream().use {
                     val fileOutputStream = FileOutputStream(saveName)
                     fileOutputStream.write(it.readAllBytes())
@@ -111,27 +117,28 @@ object HttpTemplate : Template {
 
         }
 
-        @FunctionArgsSize([1,2])
-        object ApiContentFunction  : HttpTemplateImpl<String>{
+        @FunctionArgsSize([1, 2])
+        object ApiContentFunction : HttpTemplateImpl<String> {
             override val name: String
                 get() = "content"
             override val type: KClass<String>
                 get() = String::class
 
             override suspend fun execute(args: Parameter): String {
-                println(args.size)
-                return when(args.size){
+                return when (args.size) {
                     1 -> json(args[0])
-                    2 -> json(args[0],args.getMap(1))
-                    else -> error(name,args.size)
+                    2 -> json(args[0], args.getMap(1))
+                    else -> error(name, args.size)
                 }
             }
 
-            private fun json(http: String,param: Map<String, String>? = null) = httpRequest(http,param).body!!.string()
+            private fun json(http: String, param: Map<String, String>? = null) =
+                httpRequest(http, param).body!!.string()
 
         }
-        @FunctionArgsSize([2,3])
-        object ApiFieldFunction : HttpTemplateImpl<String>{
+
+        @FunctionArgsSize([2, 3])
+        object ApiFieldFunction : HttpTemplateImpl<String> {
             override val name: String
                 get() = "field"
             override val type: KClass<String>

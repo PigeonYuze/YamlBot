@@ -112,11 +112,15 @@ object BaseTemplate : Template {
                 return coroutineScope {
                     async {
                         var jsonElement = Json.parseToJsonElement(json)
-                        for (arg in args.subList(0,args.lastIndex)) {
+                        for (arg in args.subList(1, args.lastIndex)) {
                             if (arg !is String) continue
                             jsonElement = if (arg.toIntOrNull() != null) { //is number
                                 jsonElement.jsonArray.getOrNull(arg.toInt()) ?: jsonElement.jsonNull
-                            } else jsonElement.jsonObject[arg]!!
+                            } else if (jsonElement is JsonObject) {
+                                jsonElement.jsonObject[arg] ?: error("Cannot find $arg in $jsonElement")
+                            } else {
+                                jsonElement.jsonPrimitive
+                            }
                         }
                         val fieldData = jsonElement.toString()
                         return@async if (fieldData.startsWith('"') && fieldData.endsWith('"')) {

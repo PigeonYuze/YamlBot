@@ -10,6 +10,7 @@ import com.pigeonyuze.util.SerializerData
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.mamoe.mirai.event.events.MessageEvent
+import net.mamoe.mirai.message.code.CodableMessage
 import net.mamoe.mirai.message.code.MiraiCode
 import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.message.data.MessageSource.Key.quote
@@ -90,7 +91,7 @@ sealed interface Command {
                 return
             }
             LoggerManager.loggingTrace("Command-run", "Parse (message: String) to (miraiMessage: Message)")
-            val answer = parseMessage(answerContent, templateCallName).toMiraiMessage()
+            val answer = parseData(answerContent, templateCallName).toMiraiMessage()
             LoggerManager.loggingDebug("Command-run", answer.serializeToMiraiCode())
             LoggerManager.loggingTrace("Command-run", "Answering method : $answeringMethod")
             when (answeringMethod) {
@@ -108,10 +109,11 @@ sealed interface Command {
         }
 
         private fun String.toMiraiMessage() = MiraiCode.deserializeMiraiCode(this)
-        
+
         suspend fun MessageEvent.quote(context: String) = this.subject.sendMessage(this.message.quote().plus(context))
 
-        fun parseMessage(messageContent: String, templateCallName: MutableMap<String, Any?>): String {
+
+        fun parseData(messageContent: String, templateCallName: MutableMap<String, Any?>): String {
             LoggerManager.loggingDebug("Command-parseMessage", "Converts the set template to values.")
             var startIndex = 0
             var inCommand = false
@@ -132,10 +134,10 @@ sealed interface Command {
                     val value = templateCallName[callName]
                     val replaceRange = retString.replaceFirst(
                         "%call-${callName}%",
-                        (if (value is MessageChain) value.serializeToMiraiCode() else value?.toString())
+                        (if (value is CodableMessage) value.serializeToMiraiCode() else value?.toString())
                             ?: illegalArgument("Cannot find $callName in 'run'!")
                     )
-                    LoggerManager.loggingTrace("Command-parseMessage", "Converts -> `$callName`,replace value!")
+                    LoggerManager.loggingTrace("Command-parseData", "Converts -> `$callName`,replace value!")
                     retString = replaceRange
                     inCommand = false
                     continue
@@ -156,12 +158,11 @@ sealed interface Command {
                 "Command-callFunction",
                 "Template: ${template::class.jvmName} name: ${template.name}"
             )
-            val args = templateYML.parameter
-            args.parseElement(templateCall)
+            var args = templateYML.parameter.parseElement(templateCall)
             val annotationList = template::class.annotations
             for (annotation in annotationList) {
                 if (annotation is SerializerData) {
-                    args.setValueByCommand(annotation, event)
+                    args = args.setValueByCommand(annotation, event)
                 }
             }
             return template.execute(args)
@@ -487,7 +488,6 @@ sealed interface Command {
         }
 
         private fun addTemplateFromArgs(args: Parameter) {
-            println(args)
             for ((index, arg) in args.withIndex()) {
                 templateCallNameImpl["arg${index + 1}"] = arg
             }

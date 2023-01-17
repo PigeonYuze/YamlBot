@@ -19,7 +19,7 @@ import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.message.MessageSerializers
 import net.mamoe.yamlkt.*
 import java.io.File
-import java.util.StringJoiner
+import java.util.*
 
 @OptIn(ConsoleExperimentalApi::class)
 /**
@@ -142,7 +142,6 @@ object YamlCommandDecoder : PluginDataStorage {
             val type = value.content
             describe?.set(index, type)
         }
-        println("args command built")
         return ArgCommand(
             name,
             answeringMethod,
@@ -313,11 +312,9 @@ object YamlCommandDecoder : PluginDataStorage {
                     if (line.endsWith("value: ")) continue
                     if (line.startsWith("#")) continue //comment
                     if (line.startsWith("      type: com.pigeonyuze.command.Command")) continue
-                    if (line == "    argsSplit:  ") { //IDK why,but `yamlkt` cannot serialize the ' '(char) to the ' '(text)
-                        joiner.add("    argsSplit: ' '")
-                        continue
-                    }
-                    joiner.add(line.replaceFirst("    ",""))
+                    joiner.add(
+                        line.replaceFirst("    ", "").replace("char:  ", "char:' '")
+                    ) //https://github.com/Him188/yamlkt/issues/53/
                 }
                 joiner.toString()
             }

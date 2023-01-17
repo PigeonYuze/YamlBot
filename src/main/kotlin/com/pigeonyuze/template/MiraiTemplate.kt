@@ -64,7 +64,7 @@ object MiraiTemplate : Template {
                     usage.add("arg${i + 1}")
                 }
                 return usage.toString()
-            })
+            }.invoke())
         }
 
 

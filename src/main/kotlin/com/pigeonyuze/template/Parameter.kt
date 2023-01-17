@@ -1,9 +1,12 @@
 package com.pigeonyuze.template
 
-import com.pigeonyuze.command.Command.Companion.parseMessage
+import com.pigeonyuze.command.Command.Companion.parseData
 import com.pigeonyuze.command.illegalArgument
-import com.pigeonyuze.util.*
+import com.pigeonyuze.util.SerializerData
 import com.pigeonyuze.util.SerializerData.SerializerType.*
+import com.pigeonyuze.util.keyAndValueStringDataToMap
+import com.pigeonyuze.util.stringMap
+import com.pigeonyuze.util.toAnyOrNull
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.yamlkt.YamlList
@@ -17,6 +20,11 @@ class Parameter constructor() {
 
     val stringValueList
         get() = _stringValue
+
+    private constructor(value: List<Any>, _stringValue: List<String>) : this() {
+        this.value.addAll(value)
+        this._stringValue.addAll(_stringValue)
+    }
 
     constructor(elements: Iterable<Any>) : this() {
         value.addAll(elements)
@@ -101,11 +109,14 @@ class Parameter constructor() {
     fun subArgs(fromIndex: Int, toIndex: Int) = Parameter(value.subList(fromIndex, toIndex))
     fun random() = this[(0..size).random()]
     private fun errorType(index: Int): Nothing = illegalArgument("Error parameter type in $index")
-    fun parseElement(templateCall: MutableMap<String, Any?>) {
-        for ((index, arg) in _stringValue.withIndex()) {
-            if (!arg.contains("%call-")) continue
-            value[index] = parseMessage(arg, templateCall)
+    fun parseElement(templateCall: MutableMap<String, Any?>): Parameter { //不对本值进行任何修改，具有唯一性
+        val ret = Parameter()
+        for (arg in _stringValue) {
+            val data = if (arg.contains("%call-")) parseData(arg, templateCall) else arg
+            ret.value.add(data)
+            ret._stringValue.add(data)
         }
+        return ret
     }
 
     //region Get function
@@ -115,6 +126,7 @@ class Parameter constructor() {
     }
 
     fun getLong(index: Int): Long {
+        if (value[index] is Long) return value[index] as Long
         return _stringValue[index].toLongOrNull() ?: errorType(index)
     }
 
@@ -153,7 +165,8 @@ class Parameter constructor() {
         value.add(oldValue)
     }
 
-    fun setValueByCommand(annotation: SerializerData, event: MessageEvent) {
+    fun setValueByCommand(annotation: SerializerData, event: MessageEvent): Parameter {
+        val ret = Parameter(value, _stringValue)
         val plusElement: Any = when (annotation.serializerJSONType) {
             MESSAGE -> event.message
             SUBJECT_ID -> event.subject.id
@@ -165,10 +178,11 @@ class Parameter constructor() {
         }
 
         if (lastIndex >= (annotation.buildIndex) && annotation.buildIndex != -1) {
-            setAndAddOldValue(annotation.buildIndex, plusElement)
+            ret.setAndAddOldValue(annotation.buildIndex, plusElement)
         } else {
-            value.add(plusElement)
+            ret.value.add(plusElement)
         }
+        return ret
     }
 
     override fun equals(other: Any?): Boolean {
@@ -182,7 +196,6 @@ class Parameter constructor() {
     override fun toString(): String {
         return value.toString()
     }
-
 
     companion object {
         fun Parameter.addAny(any: Any) {
