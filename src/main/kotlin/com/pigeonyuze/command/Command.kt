@@ -241,7 +241,7 @@ sealed interface Command {
         override val answerContent: String,
         override val run: List<TemplateYML>,
         override val condition: List<Condition> = listOf(),
-        private val argsSplit: Char = ' ',
+        private val argsSplit: String = " ",
         private val useLaterAddParams: Boolean = true,
         private val laterAddParamsTimeoutSecond: Int = 60,
         private val argsSize: Int,

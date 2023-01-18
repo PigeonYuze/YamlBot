@@ -89,7 +89,7 @@ object YamlCommandDecoder : PluginDataStorage {
         val laterAddParamsTimeoutSecond =
             (commandElement["laterAddParamsTimeoutSecond"] as? YamlLiteral)?.toIntOrNull() ?: 60
         val useLaterAddParams = (commandElement["useLaterAddParams"] as? YamlLiteral)?.toBoolean() ?: true
-        val argsSplit = (commandElement["argsSplit"] as? YamlLiteral)?.toIntOrNull()?.toChar() ?: ' '
+        val argsSplit = (commandElement["argsSplit"] as? YamlLiteral)?.content ?: " "
         val requestYaml = commandElement["request"] as? YamlMap
         val describeYaml = commandElement["describe"] as? YamlMap
 
@@ -313,8 +313,8 @@ object YamlCommandDecoder : PluginDataStorage {
                     if (line.startsWith("#")) continue //comment
                     if (line.startsWith("      type: com.pigeonyuze.command.Command")) continue
                     joiner.add(
-                        line.replaceFirst("    ", "").replace("char:  ", "char:' '")
-                    ) //https://github.com/Him188/yamlkt/issues/53/
+                        line.replaceFirst("    ", "")
+                    )
                 }
                 joiner.toString()
             }
