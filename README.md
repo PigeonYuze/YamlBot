@@ -278,5 +278,9 @@ condition:
 
 ***此项可以不写 不强制要求序列化 或者按照举例一样修改***
 
-关于调用函数方面，你可以前往[TemplateDoc](https://github.com/PigeonYuze/YamlBot/blob/069e5651ab8e83e2b91294f6308bce61a2e8d1e9/src/main/kotlin/com/pigeonyuze/template/TemplateDoc.md)获取帮助
+关于调用函数方面，你可以前往[TemplateDoc](https://github.com/PigeonYuze/YamlBot/blob/bb1e41b6454e5cade89b17b97925c78d1415959c/docs/TemplateDoc.md)
+获取帮助
 
+以上为基本的指令（`NormalCommand`
+）创建说明，进阶或其余的指令说明，请查看[ArgCommandDoc](https://github.com/PigeonYuze/YamlBot/blob/1d647791e6ec2f0995894915183acdd0de104ee3/docs/OnlyRunCommandDoc.md)
+与[OnlyRunCommandDoc](https://github.com/PigeonYuze/YamlBot/blob/1d647791e6ec2f0995894915183acdd0de104ee3/docs/ArgCommandDoc.md)

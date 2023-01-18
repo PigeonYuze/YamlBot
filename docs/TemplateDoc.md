@@ -133,7 +133,7 @@ args:
 **参数说明**
 
 1. 网页链接
-2. 下载到系统存储的路径(如：xxx/xxx/xx.png) **可选(默认为`mcl/data/http`)**
+2. 下载到系统存储的路径(如：xxx/xxx/xx.png) **可选(默认为`mcl/data/httpHashCode`)**
 3. 参数(如：a=b,c=d) **可选 你可以在`CommandReg`中直接使用`YamlMap`来表达你的参数列表(自1.1.0)**
 
 
