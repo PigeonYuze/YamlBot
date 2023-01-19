@@ -1,6 +1,9 @@
 package com.pigeonyuze.command
 
-import com.pigeonyuze.template.*
+import com.pigeonyuze.template.Parameter
+import com.pigeonyuze.template.Template
+import com.pigeonyuze.template.asParameter
+import com.pigeonyuze.template.data.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.command.descriptor.CommandArgumentParserException

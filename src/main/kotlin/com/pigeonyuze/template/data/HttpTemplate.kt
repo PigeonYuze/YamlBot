@@ -1,7 +1,11 @@
-package com.pigeonyuze.template
+package com.pigeonyuze.template.data
 
 import com.pigeonyuze.YamlBot
 import com.pigeonyuze.com.pigeonyuze.LoggerManager
+import com.pigeonyuze.template.Parameter
+import com.pigeonyuze.template.Template
+import com.pigeonyuze.template.TemplateImpl
+import com.pigeonyuze.template.parameterOf
 import com.pigeonyuze.util.FunctionArgsSize
 import com.pigeonyuze.util.dropFirstAndLast
 import kotlinx.serialization.json.Json

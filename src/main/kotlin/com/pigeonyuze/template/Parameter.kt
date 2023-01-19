@@ -2,11 +2,8 @@ package com.pigeonyuze.template
 
 import com.pigeonyuze.command.Command.Companion.parseData
 import com.pigeonyuze.command.illegalArgument
-import com.pigeonyuze.util.SerializerData
+import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
-import com.pigeonyuze.util.keyAndValueStringDataToMap
-import com.pigeonyuze.util.stringMap
-import com.pigeonyuze.util.toAnyOrNull
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.yamlkt.YamlList
@@ -149,6 +146,13 @@ class Parameter constructor() {
     fun getMessage(index: Int): Message {
         val value = value[index]
         if (value is Message) return value
+        errorType(index)
+    }
+
+    fun getList(index: Int): List<String> {
+        val value = value[index]
+        if (value is List<*>) return value.stringList()
+        if (value is String) return value.listToStringDataToList()
         errorType(index)
     }
 

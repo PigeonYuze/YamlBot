@@ -1,8 +1,11 @@
-package com.pigeonyuze.template
+package com.pigeonyuze.template.data
 
 import com.pigeonyuze.BotsTool
 import com.pigeonyuze.com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.illegalArgument
+import com.pigeonyuze.template.Parameter
+import com.pigeonyuze.template.Template
+import com.pigeonyuze.template.TemplateImpl
 import com.pigeonyuze.util.SerializerData
 import com.pigeonyuze.util.SerializerData.SerializerType
 import com.pigeonyuze.util.stringList
@@ -35,12 +38,12 @@ object FeaturesTemplate : Template {
         return FeaturesTemplateImpl.list
     }
 
-    private sealed interface FeaturesTemplateImpl<K : Any> : TemplateImpl<K>{
+    private sealed interface FeaturesTemplateImpl<K : Any> : TemplateImpl<K> {
         override val type: KClass<K>
         override val name: String
         override suspend fun execute(args: Parameter): K
 
-        companion object{
+        companion object {
             val list: List<FeaturesTemplateImpl<*>> = listOf(
                 RandomFileFunction,
                 RandomCutImageFunction,
@@ -52,11 +55,12 @@ object FeaturesTemplate : Template {
 
         }
 
-        object RandomFileFunction : FeaturesTemplateImpl<String>{
+        object RandomFileFunction : FeaturesTemplateImpl<String> {
             override val type: KClass<String>
                 get() = String::class
             override val name: String
                 get() = "randomFile"
+
             override suspend fun execute(args: Parameter): String {
                 val path = args[0]
                 return File(path).listFiles()?.random()?.absolutePath ?: path
@@ -64,7 +68,7 @@ object FeaturesTemplate : Template {
 
         }
 
-        object RandomCutImageFunction : FeaturesTemplateImpl<String>{
+        object RandomCutImageFunction : FeaturesTemplateImpl<String> {
             override val type: KClass<String>
                 get() = String::class
             override val name: String
@@ -112,8 +116,8 @@ object FeaturesTemplate : Template {
         }
 
         @SerializerData(0, SerializerType.SUBJECT_ID)
-        @SerializerData(1,SerializerType.MESSAGE)
-        object RepetitionFunction : FeaturesTemplateImpl<Unit>{
+        @SerializerData(1, SerializerType.MESSAGE)
+        object RepetitionFunction : FeaturesTemplateImpl<Unit> {
             override val type: KClass<Unit>
                 get() = Unit::class
             override val name: String
@@ -126,17 +130,17 @@ object FeaturesTemplate : Template {
 
         }
 
-        @SerializerData(0,SerializerType.SENDER_ID)
-        @SerializerData(1,SerializerType.COMMAND_ID)
-        object DataFunction : FeaturesTemplateImpl<Any>{
+        @SerializerData(0, SerializerType.SENDER_ID)
+        @SerializerData(1, SerializerType.COMMAND_ID)
+        object DataFunction : FeaturesTemplateImpl<Any> {
             override val type: KClass<Any>
                 get() = Any::class
             override val name: String
                 get() = "data"
 
-            private var hashCode_ : Int = -1
+            private var hashCode_: Int = -1
 
-            private var saveObjectDataSize_ : Int = -1
+            private var saveObjectDataSize_: Int = -1
 
             // read or write data
             // arg[0] : save with sender id
@@ -186,7 +190,7 @@ object FeaturesTemplate : Template {
             }
 
             private object Save : AutoSavePluginConfig("SAVE_DATA_$hashCode_"){
-                var saveData : MutableMap<Long,SaveObject> by value(mutableMapOf())
+                var saveData: MutableMap<Long, SaveObject> by value(mutableMapOf())
             }
 
             @kotlinx.serialization.Serializable //it maybe not good

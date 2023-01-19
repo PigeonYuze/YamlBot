@@ -1,8 +1,11 @@
-package com.pigeonyuze.template
+package com.pigeonyuze.template.data
 
 import com.pigeonyuze.UserConfig
 import com.pigeonyuze.UserData
 import com.pigeonyuze.account.User
+import com.pigeonyuze.template.Parameter
+import com.pigeonyuze.template.Template
+import com.pigeonyuze.template.TemplateImpl
 import com.pigeonyuze.util.FunctionArgsSize
 import com.pigeonyuze.util.SerializerData
 import com.pigeonyuze.util.isBoolean
@@ -57,18 +60,18 @@ object UserTemplate : Template {
         override suspend fun execute(args: Parameter): K
 
         @FunctionArgsSize([2])
-        @SerializerData(1,SerializerData.SerializerType.SENDER_ID)
-        object ValueFunction : UserTemplateImpl<String>{
+        @SerializerData(1, SerializerData.SerializerType.SENDER_ID)
+        object ValueFunction : UserTemplateImpl<String> {
             override val name: String
                 get() = "value"
             override val type: KClass<String>
                 get() = String::class
 
             override suspend fun execute(args: Parameter): String {
-                return when(args.size) {
+                return when (args.size) {
                     2 -> value(args[0], args.getLong(1))
                     3 -> value(args[0], args.getLong(2))
-                    else ->error(name,args.size)
+                    else -> error(name, args.size)
                 }
             }
 
@@ -80,10 +83,10 @@ object UserTemplate : Template {
         }
 
         @FunctionArgsSize([0])
-        @SerializerData(0,SerializerData.SerializerType.SENDER_NAME)
-        @SerializerData(1,SerializerData.SerializerType.SENDER_NICK)
-        @SerializerData(2,SerializerData.SerializerType.SENDER_ID)
-        object RegFunction : UserTemplateImpl<Boolean>{
+        @SerializerData(0, SerializerData.SerializerType.SENDER_NAME)
+        @SerializerData(1, SerializerData.SerializerType.SENDER_NICK)
+        @SerializerData(2, SerializerData.SerializerType.SENDER_ID)
+        object RegFunction : UserTemplateImpl<Boolean> {
             override val name: String
                 get() = "reg"
             override val type: KClass<Boolean>
@@ -108,19 +111,19 @@ object UserTemplate : Template {
 
         }
 
-        @FunctionArgsSize([1,2,3])
-        @SerializerData(3,SerializerData.SerializerType.SENDER_ID) //
-        object SetFunction : UserTemplateImpl<Unit>{
+        @FunctionArgsSize([1, 2, 3])
+        @SerializerData(3, SerializerData.SerializerType.SENDER_ID) //
+        object SetFunction : UserTemplateImpl<Unit> {
             override val name: String
                 get() = "set"
             override val type: KClass<Unit>
                 get() = Unit::class
 
             override suspend fun execute(args: Parameter) {
-                when(args.size){ //以下逻辑比较复杂 我也很难整明白 你看注释就行 by Pigeon_Yuze.
+                when (args.size) { //以下逻辑比较复杂 我也很难整明白 你看注释就行 by Pigeon_Yuze.
                     4 -> {
                         //args: (name) (forAllUserRun) (newValue) ($auto-plus--sender_id$)
-                        if (args[1].isBoolean()) set(args[0],args[2],args.getBoolean(1))
+                        if (args[1].isBoolean()) set(args[0], args[2], args.getBoolean(1))
                         //args: (name) (object-qqid) (newValue) ($auto-plus--sender_id$)
                         else set(args[0],args.getLong(1),args[2])
                     }
@@ -158,19 +161,19 @@ object UserTemplate : Template {
 
         }
 
-        @FunctionArgsSize([2,3])
-        @SerializerData(3,SerializerData.SerializerType.SENDER_ID) //
-        object PlusFunction : UserTemplateImpl<Unit>{
+        @FunctionArgsSize([2, 3])
+        @SerializerData(3, SerializerData.SerializerType.SENDER_ID) //
+        object PlusFunction : UserTemplateImpl<Unit> {
             override val name: String
                 get() = "plus"
             override val type: KClass<Unit>
                 get() = Unit::class
 
             override suspend fun execute(args: Parameter) {
-                when(args.size){ //和上面的判断逻辑差不多 by Pigeon_Yuze.
+                when (args.size) { //和上面的判断逻辑差不多 by Pigeon_Yuze.
                     4 -> {
                         //args: (name) (object-qqid) (newValue) ($auto-plus--sender_id$)
-                        plus(args[0],args.getLong(1),args[2])
+                        plus(args[0], args.getLong(1), args[2])
                     }
                     3 -> {
                         //args: (name) (newValue) ($auto-plus--sender_id$)
@@ -189,19 +192,19 @@ object UserTemplate : Template {
 
         }
 
-        @FunctionArgsSize([1,2,3])
-        @SerializerData(3,SerializerData.SerializerType.SENDER_ID) //
-        object MinusFunction : UserTemplateImpl<Unit>{
+        @FunctionArgsSize([1, 2, 3])
+        @SerializerData(3, SerializerData.SerializerType.SENDER_ID) //
+        object MinusFunction : UserTemplateImpl<Unit> {
             override val name: String
                 get() = "minus"
             override val type: KClass<Unit>
                 get() = Unit::class
 
             override suspend fun execute(args: Parameter) {
-                when(args.size){ //和上面的逻辑差不多 by Pigeon_Yuze.
+                when (args.size) { //和上面的逻辑差不多 by Pigeon_Yuze.
                     4 -> {
                         //args: (name) (object-qqid) (newValue) ($auto-plus--sender_id$)
-                        minus(args[0],args.getLong(1),args[2])
+                        minus(args[0], args.getLong(1), args[2])
                     }
                     3 -> {
                         //args: (name) (newValue) ($auto-plus--sender_id$)
@@ -220,15 +223,15 @@ object UserTemplate : Template {
         }
 
         @FunctionArgsSize([-1])
-        @SerializerData(0,SerializerData.SerializerType.SENDER_ID)
-        object CallFunction : UserTemplateImpl<Any>{
+        @SerializerData(0, SerializerData.SerializerType.SENDER_ID)
+        object CallFunction : UserTemplateImpl<Any> {
             override val name: String
                 get() = "callElementFunction"
             override val type: KClass<Any>
                 get() = Any::class
 
             override suspend fun execute(args: Parameter): Any {
-                if (args.size < 3) error(name,args.size)
+                if (args.size < 3) error(name, args.size)
                 val senderID = args.getLong(0)
                 val inArgsExistObjectId = args[1].isLong()
                 val userElement =

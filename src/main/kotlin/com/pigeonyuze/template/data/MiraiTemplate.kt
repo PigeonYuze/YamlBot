@@ -1,9 +1,13 @@
-package com.pigeonyuze.template
+package com.pigeonyuze.template.data
 
 import com.pigeonyuze.BotsTool
 import com.pigeonyuze.YamlBot
 import com.pigeonyuze.command.illegalArgument
 import com.pigeonyuze.runConfigsReload
+import com.pigeonyuze.template.Parameter
+import com.pigeonyuze.template.Template
+import com.pigeonyuze.template.TemplateImpl
+import com.pigeonyuze.template.parameterOf
 import com.pigeonyuze.util.FunctionArgsSize
 import com.pigeonyuze.util.SerializerData
 import io.github.kasukusakura.silkcodec.AudioToSilkCoder
@@ -72,9 +76,9 @@ object MiraiTemplate : Template {
         override val type: KClass<K>
         override val name: String
 
-        @SerializerData(2,SerializerData.SerializerType.SUBJECT_ID)
-        object UploadFunction : MiraiTemplateImpl<Message>{
-            override suspend fun execute(args: Parameter) : Message{
+        @SerializerData(2, SerializerData.SerializerType.SUBJECT_ID)
+        object UploadFunction : MiraiTemplateImpl<Message> {
+            override suspend fun execute(args: Parameter): Message {
                 return when (args.size) {
                     2 -> upload(args[0], args.getLong(1))
                     3 -> upload(args[0], args[1], args.getLong(2))
@@ -242,7 +246,7 @@ object MiraiTemplate : Template {
 
         @FunctionArgsSize([1])
         @SerializerData(1, SerializerData.SerializerType.EVENT_ALL)
-        object EventValueFunction : MiraiTemplateImpl<Any>{
+        object EventValueFunction : MiraiTemplateImpl<Any> {
             override suspend fun execute(args: Parameter): Any {
                 if (args.size != 1) error(name, args.size)
                 return value(args[0], args.getMessageEvent(1))
@@ -286,10 +290,10 @@ object MiraiTemplate : Template {
                 get() = "value"
 
         }
-        
-        @SerializerData(0,SerializerData.SerializerType.SUBJECT_ID)
-        @FunctionArgsSize([2,3])
-        object GroupFilesFunction : MiraiTemplateImpl<Any>{
+
+        @SerializerData(0, SerializerData.SerializerType.SUBJECT_ID)
+        @FunctionArgsSize([2, 3])
+        object GroupFilesFunction : MiraiTemplateImpl<Any> {
             override suspend fun execute(args: Parameter): Any {
                 val group = BotsTool.getGroupOrNull(args.getLong(0)) ?: error("Cannot find group ${args[0]}!")
                 val files = group.files

@@ -1,5 +1,8 @@
-package com.pigeonyuze.template
+package com.pigeonyuze.template.data
 
+import com.pigeonyuze.template.Parameter
+import com.pigeonyuze.template.Template
+import com.pigeonyuze.template.TemplateImpl
 import com.pigeonyuze.util.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
