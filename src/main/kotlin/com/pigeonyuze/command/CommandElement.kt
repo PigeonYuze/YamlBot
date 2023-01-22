@@ -99,7 +99,8 @@ class Condition(
     }
 
     suspend fun invoke(event: MessageEvent, lastCondition: Condition, templateCall: MutableMap<String, Any?>) {
-        val callValue = this.call?.let { Command.callFunction(it, event,templateCall).toString().toBooleanStrictOrNull() } ?: false
+        val callValue =
+            this.call?.let { Command.callFunction(it, event, templateCall).toString().toBooleanStrictOrNull() } ?: false
         if (this.request == JudgmentMethod.NONE && this.request == JudgmentMethod.ELSE) {
             runRequest = true
             return
@@ -123,23 +124,25 @@ enum class AnsweringMethod {
 }
 
 @Serializable
-open class TemplateYML private constructor(){
+open class TemplateYML private constructor() {
     lateinit var use: ImportType
     lateinit var call: String
+
     @kotlinx.serialization.Transient
-    /**
-     * @suppress Serializable transient
-     * */
+            /**
+             * @suppress Serializable transient
+             * */
     var parameter = Parameter()
 
     lateinit var args: List<String>
     lateinit var name: String
+
     constructor(
         use: ImportType,
         call: String,
         args: List<String>,
-        name: String
-    ) : this(){
+        name: String,
+    ) : this() {
         if (name.contains("%")) illegalArgument("${use.name}.${call}名称不应该含有 '%'")
         //region Init
         this.name = name
@@ -149,12 +152,13 @@ open class TemplateYML private constructor(){
         this.parameter = args.asParameter()
         //endregion
     }
+
     constructor(
         use: ImportType,
         call: String,
         args: Parameter,
-        name: String
-    ) : this(){
+        name: String,
+    ) : this() {
         if (name.contains("%")) illegalArgument("${use.name}.${call}名称不应该含有 '%'")
         //region Init
         this.name = name
@@ -182,6 +186,9 @@ enum class ImportType {
     },
     FEATURES {
         override fun getProjectClass(): Template = FeaturesTemplate
+    },
+    MESSAGE {
+        override fun getProjectClass(): Template = MessageTemplate
     };
 
     abstract fun getProjectClass(): Template
