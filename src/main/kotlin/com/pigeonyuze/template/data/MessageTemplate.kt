@@ -8,13 +8,15 @@ import com.pigeonyuze.util.SerializerData.SerializerType
 import com.pigeonyuze.util.listToStringDataToList
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.message.code.MiraiCode
-import net.mamoe.mirai.message.data.ForwardMessage
-import net.mamoe.mirai.message.data.Message
-import net.mamoe.mirai.message.data.buildForwardMessage
+import net.mamoe.mirai.message.data.*
+import net.mamoe.mirai.message.data.Image.Key.queryUrl
+import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
+import java.io.File
 import kotlin.reflect.KClass
 
 @ExperimentalStdlibApi
 object MessageTemplate : Template {
+
     override suspend fun callValue(functionName: String, args: Parameter): Any {
         return findOrNull(functionName)!!.execute(args)
     }
@@ -30,14 +32,24 @@ object MessageTemplate : Template {
     override fun values(): List<TemplateImpl<*>> {
         return MessageTemplateImpl.list
     }
-
-
     private sealed interface MessageTemplateImpl<K : Any> : TemplateImpl<K> {
 
         companion object {
-            val list: List<MessageTemplateImpl<*>> = listOf(
+            val list: List<MessageTemplateImpl<*>> = listOf( //每一种信息都应该含有create和read
                 CreateForwardMessageAndSend,
-                ReadForwardMessage
+                ReadForwardMessage,
+                CreateFlashImageAndSend,
+                ReadFlashImage,
+                CreateMusicShareAndSend,
+                CreateFaceMessage,
+                ReadFaceMessage,
+                CreateDiceMessageAndSend,
+                ReadDiceMessage,
+                CreateLightAppAndSend,
+                ReadMusicShare,
+                //only read:
+                ReadAudio,
+                ReadImage
             )
 
             fun findFunction(functionName: String) = list.filter { it.name == functionName }.getOrNull(0)
@@ -167,6 +179,251 @@ object MessageTemplate : Template {
 
 
         }
+
+        @SerializerData(0, SerializerType.EVENT_ALL)
+        object CreateMusicShareAndSend : MessageTemplateImpl<Unit> {
+            override val type: KClass<Unit>
+                get() = Unit::class
+            override val name: String
+                get() = "sendCreateMusicShare"
+
+            override suspend fun execute(args: Parameter) {
+                val subject = args.getMessageEvent(0).subject
+                val kind = MusicKind.valueOf(args[1])
+                val title = args[2]
+                val summary = args[3]
+                val jumpUrl = args[4]
+                val pictureUrl = args[5]
+                val musicUrl = args[6]
+                val brief = args.getOrNull(7) ?: "[分享]$title"
+
+                subject.sendMessage(
+                    MusicShare(kind, title, summary, jumpUrl, pictureUrl, musicUrl, brief)
+                )
+            }
+        }
+
+        object ReadMusicShare : MessageTemplateImpl<Any> {
+            override val name: String
+                get() = "readMusicShare"
+            override val type: KClass<Any>
+                get() = Any::class
+
+            override suspend fun execute(args: Parameter): Any {
+                val message = args.getMessage(0) as MusicShare
+                return when (args[1]) {
+                    "kind", "musicKind" -> message.kind
+                    "musicUrl", "music" -> message.musicUrl
+                    "jumpUrl", "jump" -> message.jumpUrl
+                    "pictureUrl", "picture" -> message.pictureUrl
+                    "summary" -> message.summary
+                    "brief" -> message.brief
+                    "title" -> message.title
+                    "content" -> message.content
+                    else -> error("Cannot find ${args[1]} from MusicShare")
+                }
+            }
+        }
+
+        @SerializerData(0, SerializerType.EVENT_ALL)
+        object CreateFlashImageAndSend : MessageTemplateImpl<Unit> {
+            override val type: KClass<Unit>
+                get() = Unit::class
+            override val name: String
+                get() = "sendCreateFlashImage"
+
+            const val IMAGE_ID_REGEX = """(\{[\da-fA-F]{8}-([\da-fA-F]{4}-){3}[\da-fA-F]{12}}\..{3,5})"""
+            override suspend fun execute(args: Parameter) {
+                val event = args.getMessageEvent(0)
+                val pathOrMiraiCode = args[1]
+                val imageId = IMAGE_ID_REGEX.toRegex().matchEntire(pathOrMiraiCode)?.groupValues?.get(1)
+                val image = if (imageId == null) {
+                    File(pathOrMiraiCode).toExternalResource().use {
+                        event.subject.uploadImage(it)
+                    }
+                } else Image(imageId)
+                event.subject.sendMessage(image.flash())
+            }
+
+        }
+
+        object ReadFlashImage : MessageTemplateImpl<Any> {
+            override val type: KClass<Any>
+                get() = Any::class
+            override val name: String
+                get() = "readFlashImage"
+
+            override suspend fun execute(args: Parameter): Any {
+                val flashImage = args.getMessage(0) as FlashImage
+
+                return when (args[1]) {
+                    "content" -> flashImage.content
+                    "image" -> flashImage.image
+                    "miraiCode" -> flashImage.serializeToMiraiCode()
+                    "imageId" -> flashImage.image.imageId
+                    "imageType" -> flashImage.image.imageType
+                    "size" -> flashImage.image.size
+                    "height" -> flashImage.image.height
+                    "width" -> flashImage.image.width
+                    "md5" -> flashImage.image.md5
+                    "queryUrl" -> flashImage.image.queryUrl()
+                    else -> error("Cannot get ${args[1]} from flashImage")
+                }
+            }
+
+        }
+
+        @SerializerData(0, SerializerType.EVENT_ALL)
+        object CreateFaceMessage : MessageTemplateImpl<Face> {
+            override val type: KClass<Face>
+                get() = Face::class
+            override val name: String
+                get() = "createRichMessage"
+
+            override suspend fun execute(args: Parameter): Face {
+                val idOrName = args[0]
+                val id = idOrName.toIntOrNull()
+                    ?: if (idOrName.startsWith("[") && idOrName.endsWith("]")) Face.names.indexOf(idOrName)
+                    else Face.names.indexOf("[$idOrName]")
+                return Face(id)
+            }
+        }
+
+        object ReadFaceMessage : MessageTemplateImpl<Any> {
+            override val type: KClass<Any>
+                get() = Any::class
+            override val name: String
+                get() = "readFaceMessage"
+
+            override suspend fun execute(args: Parameter): Any {
+                val message = args.getMessage(0) as Face
+                return when (args[1]) {
+                    "name" -> message.name
+                    "id" -> message.id
+                    "content" -> message.content
+                    else -> error("Cannot find ${args[1]} from FaceMessage")
+                }
+            }
+        }
+
+        @SerializerData(0, SerializerType.EVENT_ALL)
+        object CreateDiceMessageAndSend : MessageTemplateImpl<Unit> {
+            override val type: KClass<Unit>
+                get() = Unit::class
+            override val name: String
+                get() = "sendDice"
+
+            override suspend fun execute(args: Parameter) {
+                val event = args.getMessageEvent(0)
+                val value = args.getOrNull(1)?.toIntOrNull() ?: (1..6).random()
+                event.subject.sendMessage(
+                    Dice(value)
+                )
+            }
+        }
+
+        object ReadDiceMessage : MessageTemplateImpl<Any> {
+            override val type: KClass<Any>
+                get() = Any::class
+            override val name: String
+                get() = "readDice"
+
+            override suspend fun execute(args: Parameter): Any {
+                val message = args.getMessage(0) as Dice
+                return when (args[1]) {
+                    "value" -> message.value
+                    "name" -> message.name
+                    "content" -> message.content
+                    else -> error("Cannot find ${args[1]} from Dice")
+                }
+            }
+        }
+
+        @SerializerData(0, SerializerType.EVENT_ALL)
+        object CreateLightAppAndSend : MessageTemplateImpl<Unit> {
+            override val type: KClass<Unit>
+                get() = Unit::class
+            override val name: String
+                get() = "sendCreateLightApp"
+
+            override suspend fun execute(args: Parameter) {
+                val subject = args.getMessageEvent(0).subject
+                val content = args[1]
+                subject.sendMessage(LightApp(content))
+            }
+        }
+
+        /*
+        TODO: Light App Reader
+
+        object ReadLightApp : MessageTemplateImpl<Any> {
+            override val type: KClass<Any>
+                get() = Any::class
+            override val name: String
+                get() = "readLightApp"
+
+            override suspend fun execute(args: Parameter): Any {
+                val message = args.getMessage(0) as LightApp
+                val type = args[1]
+                if (type == "content") return message.content
+                val content = message.content
+
+                val isXmlContent = content.startsWith("<") && content.endsWith(">")
+                val getValue = args.subArgs(1)
+
+                return BaseTemplate.callValue(if (isXmlContent) "parseXml" else "parseJson",getValue.setFirst(content))
+            }
+
+        }
+        */
+
+        //region 已经在 [MiraiTemplate] 中定义了上传与发送 只需要解析的信息类型
+        object ReadImage : MessageTemplateImpl<Any> {
+            override val type: KClass<Any>
+                get() = Any::class
+            override val name: String
+                get() = "readImage"
+
+            override suspend fun execute(args: Parameter): Any {
+                val image = args.getMessage(0) as Image
+                return when (args[1]) {
+                    "content" -> image.content
+                    "miraiCode" -> image.serializeToMiraiCode()
+                    "imageId" -> image.imageId
+                    "imageType" -> image.imageType
+                    "size" -> image.size
+                    "height" -> image.height
+                    "width" -> image.width
+                    "md5" -> image.md5
+                    "queryUrl" -> image.queryUrl()
+                    else -> error("Cannot get ${args[1]} from Image")
+                }
+            }
+
+        }
+
+        object ReadAudio : MessageTemplateImpl<Any> {
+            override val type: KClass<Any>
+                get() = Any::class
+            override val name: String
+                get() = "readAudio"
+
+            override suspend fun execute(args: Parameter): Any {
+                val audio = args.getMessage(0) as OnlineAudio
+                return when (args[1]) {
+                    "codec" -> audio.codec
+                    "content" -> audio.content
+                    "filename" -> audio.filename
+                    "md5" -> audio.fileMd5
+                    "size" -> audio.fileSize
+                    "length" -> audio.length
+                    "downloadUrl" -> audio.urlForDownload
+                    else -> error("Cannot get ${args[1]} from Audio")
+                }
+            }
+        }
+        //endregion
+
     }
 
 }
