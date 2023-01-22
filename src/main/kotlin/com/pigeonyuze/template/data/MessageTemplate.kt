@@ -14,7 +14,7 @@ import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import java.io.File
 import kotlin.reflect.KClass
 
-@ExperimentalStdlibApi
+
 object MessageTemplate : Template {
 
     override suspend fun callValue(functionName: String, args: Parameter): Any {

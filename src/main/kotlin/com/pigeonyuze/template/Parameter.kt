@@ -25,11 +25,17 @@ class Parameter constructor() {
     }
 
     constructor(elements: Iterable<Any>) : this() {
-        value.addAll(elements)
+        for (any in elements) {
+            value.add(any)
+            _stringValue.add(any.toString())
+        }
     }
 
     constructor(elements: Array<out Any>) : this() {
-        value.addAll(elements)
+        for (any in elements) {
+            value.add(any)
+            _stringValue.add(any.toString())
+        }
     }
 
     val size
@@ -167,7 +173,9 @@ class Parameter constructor() {
     private fun setAndAddOldValue(index: Int, element: Any) {
         val oldValue = value[index]
         value[index] = element
-        value.add(oldValue)
+        if (value.lastIndex >= index + 1) {
+            value[index + 1] = oldValue
+        } else value.add(oldValue)
     }
 
     fun setValueByCommand(annotation: SerializerData, event: MessageEvent): Parameter {
