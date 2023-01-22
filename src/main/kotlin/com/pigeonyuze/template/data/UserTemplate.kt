@@ -105,7 +105,7 @@ object UserTemplate : Template {
 
             private fun reg(name: String, qqId: Long): Boolean {
                 if (UserData.userList.any { it.qqId == qqId }) return false
-                UserData.userList.add(User(qqId,name, UserConfig.userStartIndex + UserData.userList.size +1))
+                UserData.userList.add(User(qqId, name, UserConfig.userStartIndex + UserData.userList.size + 1))
                 return true
             }
 
@@ -125,11 +125,11 @@ object UserTemplate : Template {
                         //args: (name) (forAllUserRun) (newValue) ($auto-plus--sender_id$)
                         if (args[1].isBoolean()) set(args[0], args[2], args.getBoolean(1))
                         //args: (name) (object-qqid) (newValue) ($auto-plus--sender_id$)
-                        else set(args[0],args.getLong(1),args[2])
+                        else set(args[0], args.getLong(1), args[2])
                     }
                     3 -> {
                         //args: (name) (object-qqid) ($auto-plus--sender_id$) -> init
-                        if (args[1].isLong()) set(args[0],args.getLong(1))
+                        if (args[1].isLong()) set(args[0], args.getLong(1))
                         //args: (name) (newValue) ($auto-plus--sender_id$)
                         else set(args[0], args.getLong(2),args[1])
                     }
@@ -151,10 +151,10 @@ object UserTemplate : Template {
             }
 
             fun set(name: String,qqId: Long,newValue: String){
-                UserData.userList.first { it.qqId == qqId }.set(name,newValue)
+                UserData.userList.first { it.qqId == qqId }.set(name, newValue)
             }
 
-            fun set(name: String,qqId: Long){
+            fun set(name: String, qqId: Long) {
                 val userElement = UserData.userList.first { it.qqId == qqId }.find(name)
                 userElement.initValue()
             }
@@ -177,17 +177,17 @@ object UserTemplate : Template {
                     }
                     3 -> {
                         //args: (name) (newValue) ($auto-plus--sender_id$)
-                         plus(args[0],args.getLong(2),args[1])
+                        plus(args[0], args.getLong(2), args[1])
                     }
                     else -> {
-                        error(name,args.size)
+                        error(name, args.size)
                     }
                 }
             }
 
 
-            fun plus(name: String,qqId: Long,newValue: String){
-                UserData.userList.first { it.qqId == qqId }.plus(name,newValue)
+            fun plus(name: String, qqId: Long, newValue: String) {
+                UserData.userList.first { it.qqId == qqId }.plus(name, newValue)
             }
 
         }
@@ -208,10 +208,10 @@ object UserTemplate : Template {
                     }
                     3 -> {
                         //args: (name) (newValue) ($auto-plus--sender_id$)
-                        minus(args[0],args.getLong(2),args[1])
+                        minus(args[0], args.getLong(2), args[1])
                     }
                     else -> {
-                        error(name,args.size)
+                        error(name, args.size)
                     }
                 }
             }

@@ -60,7 +60,6 @@ object FeaturesTemplate : Template {
                 get() = String::class
             override val name: String
                 get() = "randomFile"
-
             override suspend fun execute(args: Parameter): String {
                 val path = args[0]
                 return File(path).listFiles()?.random()?.absolutePath ?: path

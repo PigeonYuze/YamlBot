@@ -18,6 +18,7 @@ class Parameter constructor() {
     val stringValueList
         get() = _stringValue
 
+
     private constructor(value: List<Any>, _stringValue: List<String>) : this() {
         this.value.addAll(value)
         this._stringValue.addAll(_stringValue)
@@ -103,7 +104,7 @@ class Parameter constructor() {
     }
 
 
-    fun subArgs(fromIndex: Int, toIndex: Int) = Parameter(value.subList(fromIndex, toIndex))
+    fun subArgs(fromIndex: Int, toIndex: Int = value.lastIndex) = Parameter(value.subList(fromIndex, toIndex))
     fun random() = this[(0..size).random()]
     private fun errorType(index: Int): Nothing = illegalArgument("Error parameter type in $index")
     fun parseElement(templateCall: MutableMap<String, Any?>): Parameter { //不对本值进行任何修改，具有唯一性
@@ -202,6 +203,8 @@ class Parameter constructor() {
     }
 
     companion object {
+
+
         fun Parameter.addAny(any: Any) {
             this.value.add(any)
         }
