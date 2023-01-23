@@ -7,27 +7,29 @@ import net.mamoe.yamlkt.YamlPrimitive
 
 
 fun String.listToStringDataToList(dropStart: Int = 1): List<String> {
-    val spiltAllComma: MutableList<String> = this.substring(dropStart,length-1).replace(", ", ",")
-        .split(",".toRegex()).toMutableList() //拆分所有的','
-    val spiltAllCommaTemp = mutableListOf<String>()
-    var start = -1
+    val spiltAllComma: MutableList<String> =
+        this.substring(dropStart, length - dropStart).replace(", ", ",").split(",".toRegex()).toMutableList() //拆分所有的','
+    val spiltAllCommaTemp = mutableListOf<String>()  //contains '(' or ')' then add
+    var start = -1 //-1 == not open,0 == check over,1 == wait for plus
     var tempString = ""
-    for ((i, s) in spiltAllComma.withIndex()) {
+    for (s in spiltAllComma) {
         if (s.contains('(')) {
-            start = i
+            start = 1
             tempString = tempString.plus(s).plus(",")
         } else if (s.contains(')')) {
             start = 0
             tempString = tempString.plus(s)
             spiltAllCommaTemp.add(tempString)
             tempString = ""
-        } else if (start != -1) {
+        } else if (start == 1) { //wait for
             tempString = tempString.plus(s).plus(",")
         } else spiltAllCommaTemp.add(s)
     }
-    return if (this.contains(",")) (spiltAllCommaTemp.ifEmpty { spiltAllComma }).dropLastWhile { it.isEmpty() } else listOf(
-        this
-    )
+    if (start == 1) { //still wait
+        spiltAllCommaTemp.addAll(tempString.split(","))
+    }
+    return if (this.contains(",")) (spiltAllCommaTemp.ifEmpty { spiltAllComma }).dropWhile { it.isEmpty() }
+    else listOf(this)
 }
 
 fun List<String>.makeStringToAny() : List<Any>{
