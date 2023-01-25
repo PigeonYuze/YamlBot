@@ -2,12 +2,12 @@
 
 关于`Template`相关文档的快捷链接
 
-- [BaseTemplate]()
-- [FeaturesTemplate]()
-- [HttpTemplate]()
-- [MessageTemplate]()
-- [MiraiTemplate]()
-- [UserTemplate]()
+- [BaseTemplate](https://github.com/PigeonYuze/YamlBot/blob/3e859adb6a2d21ad659604c6fd1d41a46d5d2d44/docs/template/BaseTemplate.md)
+- [FeaturesTemplate](https://github.com/PigeonYuze/YamlBot/blob/3e859adb6a2d21ad659604c6fd1d41a46d5d2d44/docs/template/FeaturesTemplate.md)
+- [HttpTemplate](https://github.com/PigeonYuze/YamlBot/blob/3e859adb6a2d21ad659604c6fd1d41a46d5d2d44/docs/template/HttpTemplate.md)
+- [MessageTemplate](https://github.com/PigeonYuze/YamlBot/blob/3e859adb6a2d21ad659604c6fd1d41a46d5d2d44/docs/template/MessageTemplate.md)
+- [MiraiTemplate](https://github.com/PigeonYuze/YamlBot/blob/3e859adb6a2d21ad659604c6fd1d41a46d5d2d44/docs/template/MiraiTemplate.md)
+- [UserTemplate](https://github.com/PigeonYuze/YamlBot/blob/3e859adb6a2d21ad659604c6fd1d41a46d5d2d44/docs/template/UserTemplate.md)
 
 在调用一个`Template`的参数列表中，默认是以`yaml`配置中的字符串进行传递的
 
