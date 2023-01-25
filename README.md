@@ -103,9 +103,9 @@ answerContent: '『%call-name%』%call-image%\n%call-from%'
     "url": "https://cn.bing.com/th?id=OHR.HighArchChina_ZH-CN8170154553_1920x1080.jpg&rf=LaDigue_1920x1080.jpg&pid=hp",
     "urlbase": "/th?id=OHR.HighArchChina_ZH-CN8170154553",
     "copyright": "天门洞，湖南天门山国家森林公园，中国 (© Shane P. White/Minden Pictures)",
-    "copyrightlink": ...,
+    "copyrightlink": "...",
     "urls": [
-      ...
+      "..."
     ]
   },
   "updateTime": 1674670336679
