@@ -278,7 +278,7 @@ object MessageTemplate : Template {
             override val type: KClass<Face>
                 get() = Face::class
             override val name: String
-                get() = "createRichMessage"
+                get() = "createFaceMessage"
 
             override suspend fun execute(args: Parameter): Face {
                 val idOrName = args[0]
