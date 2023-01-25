@@ -1,286 +1,240 @@
 # YamlBot
 
-##### 一个简单的 通过向config下的yml配置文件增加内容而创建指令的插件
+### 简介
+
+一个简单的 通过向config下的yml配置文件进行运行`bot`的插件
+
+你可以用此实现诸多功能
+
+例如：
+
+- 创建并使用指令
+- 简单的可调用的账号系统
+
+在未来我们还会实现更多的内容！
+
+你可以将你的相关配置(如：`CommandReg.yml`) 以 `功能+原名`
+的方式上传到 [your config](https://github.com/PigeonYuze/YamlBot/tree/master/your-config)
+
+### TODO
+
+- [x] 指令系统
+- [ ] 监听事件
+- [ ] 群公告调用支持
+- [ ] 对`Java`或`Kotlin`支持的部分 如：`switch(when)`
+
+### 需要
 
 里面含有部分功能需要`ffmpeg`的支持，如果你想要有完整的功能支持，请配置好[ffmpeg](https://github.com/FFmpeg/FFmpeg)
-
-在未来还会向此增加包含参数的指令(例如： `/test command arg1 arg2`)
-
-目前本插件已可以实现****基本的调用参数**** 以及基本的账号系统
 
 由于yml是一个对****空格敏感****的格式 因此在解析yml时可能会导致相关的报错
 
 **请保证你的.yml文件格式是正确的 再运行本插件!**
 
-你可以将你的相关配置(如：`CommandReg.yml`) 以 `功能+原名`的方式上传到 [your config](https://github.com/PigeonYuze/YamlBot/tree/master/your-config)
-
------
-
-## Config设置
-
-### UserConfig
-
-这是关于自带的账号内容的配置
-
----
-首先是关于是否开启的设置：
-
-```yaml
-# 是否开启用户设置
-open: false
-```
-
-该项如果被关闭了 那么所有关于用户的设置都会被抛出错误`IllegalStateException`
-并且提示`User does not open` 如果出现了该错误 则意味除了保存信息意外
-还有其他的函数调用了`User`的内置函数 你可以通过查看指令config进行寻找
-
----
-
-```yaml
-# 用户号的开始位
-# 如果为1000 则注册时展示的UID为 1001(1000+1)
-userStartIndex: 1000
-```
-
-该项是对用户id的设置 在注册时**id取该项加用户总量**
-
-如共有10个用户，该项设置为1000，在新有人注册时，他的id为1011(1000+10+1)
-
----
-```yaml
-# 默认用户名的选择
-# 当为 "nick" 时 采用用户的qq昵称
-# 当为 "name" 时 采用用户的注册群昵称(如果不是在群内 则采取机器人的备注/昵称)
-# 如果为其他则以值作为标注
-# 
-userNickSource: nick
-```
----
-
-如注释所示，在`CommandReg.yml`处可通过模板:
-```yaml
-     - use: USER
-       call: value
-       args: 
-        - name
-       name: any
-```
-进行调用
-
-关于`CommandReg.yml`的设置请看下文
-
----
-```yaml
-# 其他的元素
-# 你可以提供提供设置此项来为你的bot的User增加一个参数
-# 
-# 你需要提供name,type,defaultValue三个参数
-# 
-# defaultValue是赋值时的默认参数 如果你希望他是默认值 你可以使用new代替
-# 
-# type是这一个变量的类型 它可以为Java的八大基本类型 外加list,set,map,string,date
-# 
-# name为这一个变量的名称 在调用时它会默认采取该项为调取名 此项不可重复
-otherElements: 
-  - name: regDate
-    type: date
-    defaultValue: new
-  - name: coin
-    type: int
-    defaultValue: 0
-```
-参数说明：
-
-**`name`为该参数的名称 可通过该名称在外部调用**
-
-**`type`为参数的类型**
-
-该项`type`支持`List`,`Map`,`Set`,`String`(`str`),`Date`,
-`int`,`long`,`byte`,`short`,`float`,`double`,`boolean`(`bool`)
-
-
-以上代码在`Java`中等同与：
-
-```java
-import java.util.Date;
-
-public class OtherElements {
-    public OtherElements() {
-        Date date = new Date();
-        int coin = 0;
-    }
-}
-```
-可以发现 defaultValue的值就是量的默认值，且需要满足要求
-如果你想要使用`List`,`Map`,`Set`的话，请不要直接在yml写出相关的内容，
-而是使用如`[a,b,c]`这样的方式
-
-例如:
-```yaml
-- name: test
-  type: list
-  defaultValue: [a,b,c,1,2,3]
-- name: test2
-  type: map
-  defaultValue: [a=b,b=1,1=c]
-```
-则等同于:
-
-```java
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-public class OtherElements {
-    public OtherElements() {
-        List<Object> test = List.of("a", "b", "c", 1, 2, 3);
-        Map<Object, Object> test2 = new HashMap<>() {{
-            this.put("a", "b"); //key="a",value="v"
-            this.put("b", 1); //key="b",value=1
-            this.put(1,"c"); //key=1,value="c"
-        }};
-    }
-}
-```
-可以发现，当运行时会自动转换其类型
-如果它是纯数字，会转换为`long`或`int`；
-如果它是小数类型，会转换为`double`；
-如果都不是，则为字符串
-
-并且，只要内容`defaultValue`并且`type`为`Map`,`List`,`Set`中包含`=`**该项就会被判断为一个`Map`(可嵌套)**!
-
-`Map`的`Key`或者`Value`中都不能包含`=`（会把前后判断为Key和Value）
-
-该项不支持泛型
-
----
-### CommandReg
-**注册指令**
-
-在通过对该项的设置后，在对`MessageEvent`的监听会根据所设置自动作出回答
-
-```yaml
-COMMAND:
-  - name:
-      - test
-    answeringMethod: QUOTE
-    answerContent: "hello,world!\nthis is a test message!\n%call-sender%"
-    run:
-      - use: MIRAI
-        call: value
-        args:
-          - sender
-        name: sender
-    condition:
-      - request: none
-        call: null
-```
-以上是一个标准的`Command`的写法，
-同样的，你也可以在此处填写其他的`Command` 如：`OnlyRunCommand` 和 `ArgCommand`
-
-### 参数说明
-### Name
-```yaml
-- name: 
-  - test
-```
-
-name为该指令的**调用名** 当使用者发送的信息在这其中时会运行此项
-
-当然 如果是`ArgCommand`的话 会采用开头匹配的方法进行判断
-
-### AnsweringMethod
-```yaml
-answeringMethod: QUOTE
-```
-**回复的方式** 
-
-可选为`QUOTE`,`SEND_MESSAGE`,`AT_SEND`
-
-- `QUOTE` 为回复信息
-- `SEND_MESSAGE` 为直接发送信息
-- `AT_SEND` 为at发送者后发送信息
-
-### AnswerContent
-```yaml
-answerContent: "hello,world!\nnew line"
-```
-**回答的内容**
-
-使用`\n`进行换行 切记不可直接进行换行
-
-错误示范:
-```yaml
-answerContent: "a
-b
-c"
-```
-如果这样会被判断为`a b c`
-
-在此项中 你可以提供`%call-name%`这样的格式来调用一个参数
-
-以上分为三个部分
-- `%call-`  为调用的**标识符** 不重要 但是只有**有了此项才会被识别**
-- `name`  为**调用目标的名称** 该项**需要在`run`内找到** 否则会被用`null`替换.<br>
-使用时就是将`run`中`name`与之对应的对象替换文本
-- `%`  同样为**标识符** 标识着调用的**结束**
-
-如果在替换后出现了null 也可能标识对应的`run`返回的就是`"null"`
-
-可查看日志进行判断 ~~实在不行你可以附上完整的日志到我发的贴下面体温~~
-> V/Easy Mirai: [Command-run] Function value return: null return type: java.lang.String
-> >则代表返回的就是一个`"null"`
-
-### Run
-```yaml
- run:
-  - use: MIRAI
-    call: value
-    args:
-      - sender
-    name: sender
-```
-
-**同时进行的操作** 你也可以当作是**声明一个量**
-
-- `use` 为调用的库 它可以为
-  - USER
-  - BASE
-  - HTTP
-  - MIRAI
-  - FEATURES
-  <br> 中的一种 
-- `call` 为调用的函数名 
-- `args` 为传递的参数
-- `name` 为命名 它不可包含`%`字段
-
-你可以把该项看作以下的 `Kotlin` 代码
-```kotlin
-val sender: String = MiraiTemplate.value("sender")
-```
-
-### Condition
-```yaml
-condition:           
-  - request: none    
-    call: null       
-```
-**条件** 但是目前还没有什么用
-
-`request`可以为以下几项
-  - `if true`
-  - `if false`
-  - `else if true`
-  - `else if false`
-  - `else`
-
-以上都需要call返回一个布尔值 再提供信息进行`if/else`操作
-
-***此项可以不写 不强制要求序列化 或者按照举例一样修改***
+### 相关教程
 
 关于调用函数方面，你可以前往[TemplateDoc](https://github.com/PigeonYuze/YamlBot/blob/3d15eee0f68095835e8c9990029251941722d68d/docs/TemplateDoc.md)
 获取帮助
 
-以上为基本的指令（`NormalCommand`
-）创建说明，进阶或其余的指令说明，请查看[ArgCommandDoc](https://github.com/PigeonYuze/YamlBot/blob/3d15eee0f68095835e8c9990029251941722d68d/docs/ArgCommandDoc.md)
+配置的说明，请可查看[configs](docs/config)下的内容
+
+除了`CommandReg`中展示的普通指令(`NormalCommand`)
+的创建说明，请查看[ArgCommandDoc](https://github.com/PigeonYuze/YamlBot/blob/3d15eee0f68095835e8c9990029251941722d68d/docs/ArgCommandDoc.md)
 与[OnlyRunCommandDoc](https://github.com/PigeonYuze/YamlBot/blob/3d15eee0f68095835e8c9990029251941722d68d/docs/OnlyRunCommandDoc.md)
+
+### 示例
+
+以下我们以每日一图这样较为复杂的功能为例，逐一解释其原理
+
+我们可以找到一个可以提供每日一言功能的api网站，以下以[必应每日一图](https://api.xygeng.cn/bing/`)为例
+
+首先我们先声明它的名称，一般来说当有人发出这些内容时，指令就会被调用
+
+```yaml
+name:
+  - 每日一图
+  - bing一图
+  - '/image bing'
+```
+
+在接下来，我们可以设定它的回复内容。
+
+我们希望它会回复原信息，并且信息中包含有名称，图片以及来源
+
+```yaml
+answeringMethod: QUOTE
+```
+
+可是我们并不知道它会得到什么内容，要如何声明呢？
+
+在这方面，`YamlBot`支持了声明与调用一个变量，你可以使用`%call-变量名%`来调用变量
+
+```yaml
+answerContent: '『%call-name%』%call-image%\n%call-from%'
+```
+
+接下来就是最重要的“声明变量”部分了，它叫做`run`
+
+首先，我们需要获取今日的一图信息。
+
+由于我们需要这个`api`网站的内容，所以我们需要调用`HTTP`内的`content`功能
+
+```yaml
+- use: HTTP
+  call: content
+  args:
+    - 'https://api.xygeng.cn/bing/'
+  name: content
+```
+
+这样子，就算是声明了一个变量，它的名称取决于`name`中的内容
+
+`use`你可以理解为`import`，使`YamlBot`能够由这里找到你所需要的函数
+
+`content`就变为了 `https://api.xygeng.cn/bing/` 网站的内容：
+
+ ```json
+{
+  "code": 200,
+  "data": {
+    "id": 247,
+    "time": "20230126",
+    "title": "通往天门的阶梯",
+    "url": "https://cn.bing.com/th?id=OHR.HighArchChina_ZH-CN8170154553_1920x1080.jpg&rf=LaDigue_1920x1080.jpg&pid=hp",
+    "urlbase": "/th?id=OHR.HighArchChina_ZH-CN8170154553",
+    "copyright": "天门洞，湖南天门山国家森林公园，中国 (© Shane P. White/Minden Pictures)",
+    "copyrightlink": ...,
+    "urls": [
+      ...
+    ]
+  },
+  "updateTime": 1674670336679
+}
+```
+
+我们从中发现`Json`内`"data"`的`"title"`,`"url"`,`"copyright"`为我们所需要的内容
+
+可是我们该怎么解析这个字符串呢？
+
+我们注意到它是`Json`格式的，所以我们可以找到`BASE`的`parseJson`功能来解析`Json`
+
+```yaml
+- use: BASE
+  call: parseJson
+  args:
+    - '%call-content%'
+    - data
+    - title
+  name: name
+
+- use: BASE
+  call: parseJson
+  args:
+    - '%call-content%'
+    - data
+    - url
+  name: downlandUrl
+
+- use: BASE
+  call: parseJson
+  args:
+    - '%call-content%'
+    - data
+    - copyright
+  name: from
+```
+
+这样，我们就成功获取了我们想要的内容；同时，我们还声明了`name`,`downlandUrl`,`from`几个变量
+
+可是我们只是得到了它的下载链接，我们还需要把它下载到存储中
+
+```yaml
+- use: HTTP
+  call: downland
+  args:
+    - '%call-downlandUrl%'
+  name: imagePath
+```
+
+这样我们就得到了下载到系统中的链接
+
+接下来我们再上传一个图片到指定群聊里
+
+```yaml
+ - use: MIRAI
+   call: upload
+   args:
+     - '%call-imagePath%'
+     - image
+   name: image
+```
+
+这样子，我们需要做的就基本完成了
+
+最后再加上条件的判断，因为它不需要条件，所以我们可以用`[]`代替
+
+```yaml
+condition: [ ]
+```
+
+这样子，我们就成功构建了一个指令，让我们来试试吧！
+![img.png](docs/img.png)
+
+可以看到，指令成功运行了，同时用对应的数据代替了原本的`%call-变量名%`
+
+我们的任务就到此为止了
+
+如果在运行中，你遇到了相关的bug，可以使日志等级为`ALL`,查看相关的debug信息
+
+最终，我们就得到了以下内容
+
+```yaml
+COMMAND:
+  - name:
+      - 每日一图
+      - bing一图
+      - '/image bing'
+    answeringMethod: QUOTE
+    answerContent: '『%call-name%』%call-image%\n%call-from%'
+    run:
+      - use: HTTP
+        call: content
+        args:
+          - 'https://api.xygeng.cn/bing/'
+        name: content
+      - use: BASE
+        call: parseJson
+        args:
+          - '%call-content%'
+          - data
+          - title
+        name: name
+      - use: BASE
+        call: parseJson
+        args:
+          - '%call-content%'
+          - data
+          - url
+        name: downlandUrl
+      - use: BASE
+        call: parseJson
+        args:
+          - '%call-content%'
+          - data
+          - copyright
+        name: from
+      - use: HTTP
+        call: downland
+        args:
+          - '%call-downlandUrl%'
+        name: imagePath
+      - use: MIRAI
+        call: upload
+        args:
+          - '%call-imagePath%'
+          - image
+        name: image
+    condition: [ ]
+```
+
+以上内容你可以在[bingimage-Command.yml](https://github.com/PigeonYuze/YamlBot/blob/master/your-config/bingimage-Command.yml)找到
