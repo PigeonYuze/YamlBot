@@ -24,7 +24,7 @@ annotation class SerializerData(val buildIndex: Int, val serializerJSONType: Ser
         SENDER_NAME,
         SENDER_NICK,
         SENDER_ID,
-        COMMAND_ID
+        CONTACT
     }
 
 }

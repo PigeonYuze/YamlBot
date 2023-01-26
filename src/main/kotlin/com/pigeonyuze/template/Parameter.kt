@@ -4,6 +4,7 @@ import com.pigeonyuze.command.Command.Companion.parseData
 import com.pigeonyuze.command.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
+import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
@@ -130,9 +131,16 @@ class Parameter constructor() {
         return if (index > lastIndex) null
         else this[index]
     }
+
     fun getLong(index: Int): Long {
         if (value[index] is Long) return value[index] as Long
         return _stringValue[index].toLongOrNull() ?: errorType(index)
+    }
+
+    fun getContact(index: Int): Contact {
+        val value = value[index]
+        if (value is Contact) return value
+        errorType(index)
     }
 
     fun getInt(index: Int): Int {
@@ -195,7 +203,7 @@ class Parameter constructor() {
             SENDER_NAME -> event.senderName
             SENDER_NICK -> event.sender.nick
             SENDER_ID -> event.sender.id
-            COMMAND_ID -> 0
+            CONTACT -> event.subject
         }
 
         if (lastIndex >= (annotation.buildIndex) && annotation.buildIndex != -1) {
@@ -308,7 +316,6 @@ class Parameter constructor() {
             return value[readIndex]
         }
     }
-
 
     companion object {
 

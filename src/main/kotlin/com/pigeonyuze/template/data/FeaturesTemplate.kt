@@ -130,7 +130,6 @@ object FeaturesTemplate : Template {
         }
 
         @SerializerData(0, SerializerType.SENDER_ID)
-        @SerializerData(1, SerializerType.COMMAND_ID)
         object DataFunction : FeaturesTemplateImpl<Any> {
             override val type: KClass<Any>
                 get() = Any::class
