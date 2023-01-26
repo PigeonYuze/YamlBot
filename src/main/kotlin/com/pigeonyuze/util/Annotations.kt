@@ -28,3 +28,7 @@ annotation class SerializerData(val buildIndex: Int, val serializerJSONType: Ser
     }
 
 }
+
+
+@DslMarker
+annotation class DslParameterReader

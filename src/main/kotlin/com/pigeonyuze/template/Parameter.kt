@@ -4,6 +4,7 @@ import com.pigeonyuze.command.Command.Companion.parseData
 import com.pigeonyuze.command.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
+import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.yamlkt.YamlList
@@ -97,6 +98,7 @@ class Parameter constructor() {
     fun withIndex() = value.withIndex()
     operator fun get(index: Int) = _stringValue[index]
     fun subList(fromIndex: Int, toIndex: Int): MutableList<Any> {
+        Group
         if (fromIndex < 0) throw IndexOutOfBoundsException("fromIndex = $fromIndex")
         if (toIndex > size) throw IndexOutOfBoundsException("toIndex = $toIndex")
         require(fromIndex <= toIndex) {
@@ -128,7 +130,6 @@ class Parameter constructor() {
         return if (index > lastIndex) null
         else this[index]
     }
-
     fun getLong(index: Int): Long {
         if (value[index] is Long) return value[index] as Long
         return _stringValue[index].toLongOrNull() ?: errorType(index)
@@ -178,6 +179,13 @@ class Parameter constructor() {
         } else value.add(oldValue)
     }
 
+    fun read(run: ParameterValueReader.() -> Any): ParameterValueReader {
+        val reader = ParameterValueReader()
+        run.invoke(reader)
+        return reader
+    }
+
+
     fun setValueByCommand(annotation: SerializerData, event: MessageEvent): Parameter {
         val ret = Parameter(value, _stringValue)
         val plusElement: Any = when (annotation.serializerJSONType) {
@@ -210,6 +218,98 @@ class Parameter constructor() {
         return value.toString()
     }
 
+    inner class ParameterValueReader {
+        private val value: List<Any> = this@Parameter.value
+
+        var lastReturnValue: Any? = null
+
+        private var readIndex: Int = 0
+
+        @DslParameterReader
+        infix fun Int.read(run: Any.() -> Any) {
+            this@ParameterValueReader.readIndex = this
+
+            lastReturnValue = run(this@ParameterValueReader.value[readIndex])
+        }
+
+        @DslParameterReader
+        infix fun Int.long(run: Long.() -> Any) {
+            this@ParameterValueReader.readIndex = this
+
+            val runValue = if (value[this] is Long) value[this] as Long
+            else _stringValue[this].toLongOrNull() ?: errorType(this)
+            lastReturnValue = run.invoke(runValue)
+        }
+
+        @DslParameterReader
+        infix fun Int.int(run: Int.() -> Any) {
+            this@ParameterValueReader.readIndex = this
+            lastReturnValue = run(
+                _stringValue[this].toIntOrNull() ?: errorType(this)
+            )
+        }
+
+        @DslParameterReader
+        infix fun Int.boolean(run: Boolean.() -> Any) {
+            this@ParameterValueReader.readIndex = this
+            lastReturnValue = run(
+                _stringValue[this].toBooleanStrictOrNull() ?: errorType(this)
+            )
+        }
+
+        @DslParameterReader
+        infix fun Int.map(run: Map<String, String>.() -> Any) {
+            this@ParameterValueReader.readIndex = this
+            val value = value[this]
+            lastReturnValue = run(
+                when (value) {
+                    is Map<*, *> -> value.stringMap()
+                    is String -> value.keyAndValueStringDataToMap()
+                    else -> errorType(this)
+                }
+            )
+        }
+
+        @DslParameterReader
+        infix fun Int.message(run: Message.() -> Any) {
+            this@ParameterValueReader.readIndex = this
+            val value = value[this]
+            lastReturnValue = run.invoke(
+                if (value is Message) value
+                else errorType(this)
+            )
+        }
+
+        @DslParameterReader
+        infix fun Int.list(run: List<String>.() -> Any) {
+            this@ParameterValueReader.readIndex = this
+            val value = value[this]
+            lastReturnValue = run.invoke(
+                when (value) {
+                    is List<*> -> value.stringList()
+                    is String -> value.listToStringDataToList()
+                    else -> errorType(this)
+                }
+            )
+        }
+
+        @DslParameterReader
+        infix fun Int.messageEvent(run: MessageEvent.() -> Any) {
+            this@ParameterValueReader.readIndex = this
+            val value = value[this]
+            lastReturnValue = run.invoke(
+                if (value is MessageEvent) value
+                else errorType(this)
+            )
+        }
+
+        fun next(): Any {
+            readIndex++
+            return value[readIndex]
+        }
+    }
+
+
     companion object {
 
 
@@ -224,6 +324,7 @@ class Parameter constructor() {
         }
     }
 }
+
 
 fun parameterOf(vararg element: String): Parameter {
     return Parameter(element)

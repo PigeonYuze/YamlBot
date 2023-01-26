@@ -21,7 +21,7 @@
 - [x] 指令系统
 - [ ] 监听事件
 - [ ] 群公告调用支持
-- [ ] 对`Java`或`Kotlin`支持的部分 如：`switch(when)`
+- [x] 对`Java`或`Kotlin`支持的部分 如：`switch(when)`
 
 ### 需要
 

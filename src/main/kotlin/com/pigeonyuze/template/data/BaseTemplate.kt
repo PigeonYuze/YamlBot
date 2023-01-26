@@ -7,6 +7,7 @@ import com.pigeonyuze.util.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.*
+import java.math.BigDecimal
 import java.util.*
 import kotlin.random.Random
 import kotlin.reflect.KClass
@@ -41,6 +42,13 @@ object BaseTemplate : Template {
                 RandomText,
                 CreateJsonFunction,
                 ParseJsonFunction,
+                SwitchFunction,
+                EqualsFunction,
+                MemoryEqualsFunction,
+                CompareToFunction,
+                CompareToFunction0,
+                CompareToFunction1,
+                CompareToFunction2
             )
 
             fun findFunction(functionName: String): TemplateImpl<*>? =
@@ -68,17 +76,18 @@ object BaseTemplate : Template {
             }
 
         }
-        @FunctionArgsSize([0,1,2,3])
+
+        @FunctionArgsSize([0, 1, 2, 3])
         object RandomFunction : BaseTemplateImpl<Int> {
             override val type: KClass<Int>
                 get() = Int::class
             override val name: String
                 get() = "random"
 
-            @ArgComment(0,["由0到2147483647的随机数"])
-            @ArgComment(1,["由0到参数1的随机数"])
-            @ArgComment(2,["随机数的起点(包括该项)","随机数的起点(包括该项)"])
-            @ArgComment(3,["随机数的起点(包括该项)","随机数的终点(包含该项)","是否包含负数(默认不包含)"])
+            @ArgComment(0, ["由0到2147483647的随机数"])
+            @ArgComment(1, ["由0到参数1的随机数"])
+            @ArgComment(2, ["随机数的起点(包括该项)", "随机数的起点(包括该项)"])
+            @ArgComment(3, ["随机数的起点(包括该项)", "随机数的终点(包含该项)", "是否包含负数(默认不包含)"])
             override suspend fun execute(args: Parameter): Int {
                 return when (args.size) {
                     0 -> random()
@@ -134,7 +143,6 @@ object BaseTemplate : Template {
             }
 
         }
-
 
         object CreateJsonFunction : BaseTemplateImpl<String> {
             override val name: String
@@ -195,16 +203,132 @@ object BaseTemplate : Template {
                     JsonPrimitive(value.toBoolean())
                 } else if (value.startsWith("[") && value.endsWith("]")) {
                     JsonArray(createJsonArray(value))
-                } else if (value.contains("=")){
-                    val jsonMap = mutableMapOf<String,JsonElement>()
+                } else if (value.contains("=")) {
+                    val jsonMap = mutableMapOf<String, JsonElement>()
                     val map = value.keyAndValueStringDataToMap(0)
-                    for ((mapKey,mapValue) in map){
+                    for ((mapKey, mapValue) in map) {
                         jsonMap[mapKey] = mapValue.toJsonElement()
                     }
                     JsonObject(jsonMap)
-                }else JsonPrimitive(value)
+                } else JsonPrimitive(value)
             }
         }
+
+        object SwitchFunction : BaseTemplateImpl<String> {
+            override val name: String
+                get() = "switch"
+            override val type: KClass<String>
+                get() = String::class
+
+            override suspend fun execute(args: Parameter): String {
+                val obj = args[0]
+                val mapping = args.getMap(1)
+                var elseValue = "null"
+                for ((key, value) in mapping) {
+                    if (key == "#ELSE") elseValue = value
+                    if (key == obj) return value
+                }
+                /*
+                * a: b = "a" -> "b"
+                * c: d = "c" -> "d"
+                * #ELSE: e = else -> "e"
+                * */
+                return elseValue
+            }
+        }
+
+        object EqualsFunction : BaseTemplateImpl<Boolean> {
+            override val name: String
+                get() = "equal"
+            override val type: KClass<Boolean>
+                get() = Boolean::class
+
+            override suspend fun execute(args: Parameter): Boolean { //在被调用之前%call-%就已经被转义了
+                val obj1 = args[0]
+                val obj2 = args[1]
+                return obj1 == obj2 || obj1.hashCode() == obj2.hashCode()
+            }
+        }
+
+        //memory
+        object MemoryEqualsFunction : BaseTemplateImpl<Boolean> {
+            override val type: KClass<Boolean>
+                get() = Boolean::class
+            override val name: String
+                get() = "==="
+
+            override suspend fun execute(args: Parameter): Boolean {
+                return args.read {
+                    0 read {
+                        this === next()
+                    }
+                }.lastReturnValue as? Boolean ?: false
+            }
+        }
+
+        object CompareToFunction : BaseTemplateImpl<Int> {
+            override val name: String
+                get() = "compareTo"
+            override val type: KClass<Int>
+                get() = Int::class
+
+            override suspend fun execute(args: Parameter): Int {
+                val obj1 = args[0]
+                val obj2 = args[1]
+
+                val check0: BigDecimal? = obj1.toBigDecimalOrNull()
+                val check1: BigDecimal? = obj2.toBigDecimalOrNull()
+                if (check0 != null && check1 != null) {
+                    return check0.compareTo(check1)
+                }
+
+                return args.read {
+                    0 read {
+                        if (this is List<*> && next() is List<*>) {
+                            args.getList(0).size.compareTo(args.getList(1).size)
+                        } else if (this is Map<*, *> && next() is Map<*, *>) {
+                            args.getMap(0).size.compareTo(args.getMap(1).size)
+                        } else {
+                            obj1.compareTo(obj2)
+                        }
+                    }
+                }.lastReturnValue as Int
+            }
+        }
+
+        object CompareToFunction0 : BaseTemplateImpl<Boolean> {
+            override val name: String
+                get() = "<"
+            override val type: KClass<Boolean>
+                get() = Boolean::class
+
+            override suspend fun execute(args: Parameter): Boolean {
+                return CompareToFunction.execute(args) < 0
+            }
+        }
+
+        object CompareToFunction1 : BaseTemplateImpl<Boolean> {
+            override val name: String
+                get() = "=="
+            override val type: KClass<Boolean>
+                get() = Boolean::class
+
+            override suspend fun execute(args: Parameter): Boolean {
+                return CompareToFunction.execute(args) == 0
+            }
+        }
+
+        object CompareToFunction2 : BaseTemplateImpl<Boolean> {
+            override val name: String
+                get() = ">"
+            override val type: KClass<Boolean>
+                get() = Boolean::class
+
+            override suspend fun execute(args: Parameter): Boolean {
+                return CompareToFunction.execute(args) > 0
+            }
+        }
+
 
     }
 
