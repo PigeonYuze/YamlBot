@@ -187,7 +187,7 @@ class Parameter constructor() {
         } else value.add(oldValue)
     }
 
-    fun read(run: ParameterValueReader.() -> Any): ParameterValueReader {
+    suspend fun read(run: suspend ParameterValueReader.() -> Any): ParameterValueReader {
         val reader = ParameterValueReader()
         run.invoke(reader)
         return reader

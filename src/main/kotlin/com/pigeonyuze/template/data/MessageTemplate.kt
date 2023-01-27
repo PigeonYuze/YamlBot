@@ -17,6 +17,8 @@ import kotlin.reflect.KClass
 
 object MessageTemplate : Template {
 
+    const val IMAGE_ID_REGEX = """(\{[\da-fA-F]{8}-([\da-fA-F]{4}-){3}[\da-fA-F]{12}}\..{3,5})"""
+
     override suspend fun callValue(functionName: String, args: Parameter): Any {
         return findOrNull(functionName)!!.execute(args)
     }
@@ -232,7 +234,7 @@ object MessageTemplate : Template {
             override val name: String
                 get() = "sendCreateFlashImage"
 
-            const val IMAGE_ID_REGEX = """(\{[\da-fA-F]{8}-([\da-fA-F]{4}-){3}[\da-fA-F]{12}}\..{3,5})"""
+
             override suspend fun execute(args: Parameter) {
                 val event = args.getMessageEvent(0)
                 val pathOrMiraiCode = args[1]
