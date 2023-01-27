@@ -17,7 +17,7 @@ object YamlBot : KotlinPlugin(
     JvmPluginDescription(
         id = "com.pigeonyuze.yaml-bot",
         name = "YamlBot",
-        version = "1.1.1",
+        version = "1.3.0",
     ) {
         author("Pigeon_Yuze")
     }
@@ -31,9 +31,9 @@ object YamlBot : KotlinPlugin(
         for (command in CommandConfigs.COMMAND){
             commandList.add(command.value)
         }
-
         GlobalEventChannel.subscribeAlways<MessageEvent> {
-            commandList.filter {
+
+        commandList.filter {
                 it.isThis(this.message.contentToString())
             }.getOrNull(0)?.run(this)
         }

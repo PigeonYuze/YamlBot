@@ -11,7 +11,7 @@ mirai {
 }
 
 group = "com.pigeonyuze"
-version = "1.2.1"
+version = "1.3.0"
 
 repositories {
     maven("https://maven.aliyun.com/repository/public")
@@ -25,6 +25,7 @@ dependencies{
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
     // https://mvnrepository.com/artifact/io.github.kasukusakura/silk-codec
     implementation("io.github.kasukusakura:silk-codec:0.0.5")
+
     implementation("net.mamoe.yamlkt:yamlkt-jvm:0.12.0") //yaml
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
 }

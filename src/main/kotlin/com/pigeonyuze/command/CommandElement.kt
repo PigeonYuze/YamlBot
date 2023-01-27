@@ -189,7 +189,12 @@ enum class ImportType {
     },
     MESSAGE {
         override fun getProjectClass(): Template = MessageTemplate
-    };
+    },
+    GROUP_ANNOUNCEMENTS {
+        override fun getProjectClass(): Template = GroupAnnouncementsTemplate
+    }
+
+    ;
 
     abstract fun getProjectClass(): Template
 }
