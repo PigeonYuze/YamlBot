@@ -3,17 +3,21 @@ package com.pigeonyuze.template.data
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.TemplateImpl
+import com.pigeonyuze.test.Testable
 import com.pigeonyuze.util.SerializerData
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.announcement.*
+import net.mamoe.mirai.event.AbstractEvent
+import net.mamoe.mirai.event.events.GroupMessageEvent
+import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import java.io.File
 import kotlin.reflect.KClass
 
 
-object GroupAnnouncementsTemplate : Template {
+object GroupAnnouncementsTemplate : Template, Testable {
     override fun values(): List<TemplateImpl<*>> {
         return GroupAnnouncementsTemplateImpl.list
     }
@@ -28,6 +32,61 @@ object GroupAnnouncementsTemplate : Template {
 
     override fun functionExist(functionName: String): Boolean {
         return findOrNull(functionName) != null
+    }
+
+    override suspend fun getEventForTestAllFunction(event: AbstractEvent): List<suspend () -> Any> {
+        val msgEvent = event as GroupMessageEvent
+        lateinit var onlineAnnouncement: OnlineAnnouncement
+        return listOf(
+            {
+                onlineAnnouncement = GroupAnnouncementsTemplateImpl.PushFunction.execute(
+                    Parameter(
+                        listOf(
+                            msgEvent.subject,
+                            "这是对公告功能的上传测试\n换行\nOPEN ALL",
+                            mapOf(
+                                "pinned" to true,
+                                "sendToNewMember" to true,
+                                "nameEdit" to true,
+                                "show" to true,
+                                "require" to true,
+                            )
+                        )
+                    )
+                )
+            },
+            {
+                GroupAnnouncementsTemplateImpl.ReadFunction.execute(
+                    Parameter(
+                        listOf(
+                            msgEvent.subject,
+                            "这是对公告功能的上传测试",
+                            "fid"
+                        )
+                    )
+                )
+            },
+            {
+                GroupAnnouncementsTemplateImpl.DeleteFunction.execute(
+                    Parameter(
+                        listOf(
+                            msgEvent.subject,
+                            onlineAnnouncement.fid
+                        )
+                    )
+                )
+            }
+        )
+    }
+
+    override suspend fun getEventFilter(): AbstractEvent.() -> Boolean {
+        return {
+            this is MessageEvent
+        }
+    }
+
+    override suspend fun getAllTestObj(): List<suspend () -> Any> {
+        TODO()
     }
 
 
