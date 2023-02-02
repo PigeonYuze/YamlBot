@@ -28,14 +28,14 @@
 
 - 无参数 - 由0到2147483647的随机数
 - 1个参数
-    1. 由0到此项的随机数 : `Int`
+  1. 由0到此项的随机数 : `Int`
 - 2个参数
-    1. 随机数的起点(包括该项) : `Int`
-    2. 随机数的起点(包括该项) : `Int`
+  1. 随机数的起点(包括该项) : `Int`
+  2. 随机数的起点(包括该项) : `Int`
 - 3个参数
-    1. 随机数的起点(包括该项) : `Int`
-    2. 随机数的终点(包含该项) : `Int`
-    3. 是否包含负数 : `true` or `false`
+  1. 随机数的起点(包括该项) : `Int`
+  2. 随机数的终点(包含该项) : `Int`
+  3. 是否包含负数 : `true` or `false`
 
 ### CreateJson
 
@@ -122,3 +122,217 @@ args:
 
 输出：
 > 1
+
+### Switch
+
+与`Java(jdk>11)`中的`switch`与`kotlin`的`when`相同
+
+如果符合对应的项则运行，每一个项在运行后会自动`break`
+
+|  name  | returnType |
+|:------:|:----------:|
+| switch |   String   |
+
+**参数说明**
+
+1. 值
+2. 需要一个`Map`<br>`key`值为对应的值,`value`为返回的值<br>当未找到合适的项时选择`key`值为`#ELSE`的值
+
+举个例子
+
+```yaml
+switch: #非标准写法/也许未来会支持这样
+  "hello": "world!"
+  "world": "hello,"
+  "#ELSE": "hello,world!"
+```
+
+与以下代码相同
+
+```kotlin
+//kotlin
+fun get(value: String) = when (value) {
+    "hello" -> "world!"
+    "world" -> "hello,"
+    else -> "hello,world!"
+  }
+```
+
+```java
+//java
+class Run {
+  String get(String value) {
+    return switch (value) {
+      case "hello":
+        "world!";
+      case "world":
+        "hello,";
+      default:
+        "hello,world!";
+    };
+  }
+}
+```
+
+以上只供演示，实际上它还支持其他的类别，随后通过`equals`进行比较
+
+### Equal
+
+比较两则的值是否相同 **会比较`hashCode`**
+
+| name  | returnType |
+|:-----:|:----------:|
+| equal |  Boolean   |
+
+**参数说明**
+
+提供两个参数，将这两个参数进行比较
+
+如果相同返回`true`，反则为`false`
+
+### MemoryEquals
+
+比较两则的值是否相同 **会比较`hashCode`**
+
+| name | returnType |
+|:----:|:----------:|
+| ===  |  Boolean   |
+
+**参数说明**
+
+提供两个参数，将这两个参数的内存地址进行比较
+
+如果相同返回`true`，反则为`false`
+
+### CompareTo
+
+(**数字**) 大小比较的实现，你可用调用此项或者使用`<`,`>`,`==`更加方便的比较
+
+|   name    | returnType |
+|:---------:|:----------:|
+| compareTo |    Int     |
+
+建议使用以下支持的调用方式
+
+| name | returnType |
+|:----:|:----------:|
+| `<`  |  Boolean   |
+| `>`  |  Boolean   |
+| `==` |  Boolean   |
+
+#### 判断方法
+
+- 如果二者为数字 则比较数字大小
+- 如果二者为数组 比较项的数量
+- 如果都不是比较`toString()`的字符串
+
+**参数说明**
+
+提供两个参数
+
+### Switch
+
+与`Java(jdk>11)`中的`switch`与`kotlin`的`when`相同
+
+如果符合对应的项则运行，每一个项在运行后会自动`break`
+
+|  name  | returnType |
+|:------:|:----------:|
+| switch |   String   |
+
+**参数说明**
+
+1. 值
+2. 需要一个`Map`<br>`key`值为对应的值,`value`为返回的值<br>当未找到合适的项时选择`key`值为`#ELSE`的值
+
+举个例子
+
+```yaml
+switch: #非标准写法/也许未来会支持这样
+  "hello": "world!"
+  "world": "hello,"
+  "#ELSE": "hello,world!"
+```
+
+与以下代码相同
+
+```kotlin
+//kotlin
+fun get(value: String) = when (value) {
+    "hello" -> "world!"
+    "world" -> "hello,"
+    else -> "hello,world!"
+  }
+```
+
+```java
+//java
+class Run {
+  String get(String value) {
+    return switch (value) {
+      case "hello":
+        "world!";
+      case "world":
+        "hello,";
+      default:
+        "hello,world!";
+    };
+  }
+}
+```
+
+以上只供演示，实际上它还支持其他的类别，随后通过`equals`进行比较
+
+### Equal
+
+比较两则的值是否相同 **会比较`hashCode`**
+
+| name  | returnType |
+|:-----:|:----------:|
+| equal |  Boolean   |
+
+**参数说明**
+
+提供两个参数，将这两个参数进行比较
+
+如果相同返回`true`，反则为`false`
+
+### MemoryEquals
+
+比较两则的值是否相同 **会比较`hashCode`**
+
+| name | returnType |
+|:----:|:----------:|
+| ===  |  Boolean   |
+
+**参数说明**
+
+提供两个参数，将这两个参数的内存地址进行比较
+
+如果相同返回`true`，反则为`false`
+
+### CompareTo
+
+(**数字**) 大小比较的实现，你可用调用此项或者使用`<`,`>`,`==`更加方便的比较
+
+|   name    | returnType |
+|:---------:|:----------:|
+| compareTo |    Int     |
+
+建议使用以下支持的调用方式
+
+| name | returnType |
+|:----:|:----------:|
+| `<`  |  Boolean   |
+| `>`  |  Boolean   |
+| `==` |  Boolean   |
+
+#### 判断方法
+
+- 如果二者为数字 则比较数字大小
+- 如果二者为数组 比较项的数量
+- 如果都不是比较`toString()`的字符串
+
+**参数说明**
+
+提供两个参数
