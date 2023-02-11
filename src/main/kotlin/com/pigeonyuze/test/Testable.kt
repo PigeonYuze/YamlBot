@@ -17,7 +17,9 @@ internal interface Testable {
      *
      * 在运行时会优先运行 [getEventFilter] 获取筛选器，再运行
      * */
-    suspend fun getAllTestObj(): List<suspend () -> Any>
+    suspend fun getAllTestObj(): List<suspend () -> Any> {
+        throw NotImplementedError("An operation is not implemented")
+    }
 
     /**
      * 如果事件符合 [getEventFilter] 后会调用此项 你可以通过此处获取事件
@@ -25,7 +27,7 @@ internal interface Testable {
      * @return 检测是否被重写 如果你重写了此项请返回一个非`null`值 不然
      * */
     suspend fun getEventForTestAllFunction(event: AbstractEvent): List<suspend () -> Any> {
-        throw Error("No impl!")
+        throw NotImplementedError("An operation is not implemented")
     }
 
     /**
@@ -56,7 +58,7 @@ internal interface Testable {
                     }
                 }
             }.recoverCatching {  // no impl
-                if (it.message != "No impl!") {
+                if (it !is NotImplementedError) {
                     throw it
                 }
                 for ((index, value) in this.getAllTestObj().withIndex()) {

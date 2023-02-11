@@ -1,8 +1,10 @@
 package com.pigeonyuze.template.data
 
+import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.TemplateImpl
+import com.pigeonyuze.template.TemplateImpl.Companion.canNotFind
 import com.pigeonyuze.test.Testable
 import com.pigeonyuze.util.SerializerData
 import kotlinx.coroutines.flow.filter
@@ -85,12 +87,8 @@ object GroupAnnouncementsTemplate : Template, Testable {
         }
     }
 
-    override suspend fun getAllTestObj(): List<suspend () -> Any> {
-        TODO()
-    }
 
-
-    private sealed interface GroupAnnouncementsTemplateImpl<K : Any> : TemplateImpl<K> {
+    sealed interface GroupAnnouncementsTemplateImpl<K : Any> : TemplateImpl<K> {
         companion object {
             val list = listOf<TemplateImpl<*>>(
                 PushFunction,
@@ -202,16 +200,16 @@ object GroupAnnouncementsTemplate : Template, Testable {
                     0 read {
                         this as AnnouncementParameters
                         when (val next = next()) {
-                            "image" -> this.image ?: "NULL"
+                            "image" -> this.image ?: NullObject
                             "isPinned" -> this.isPinned
                             "sendToNewMember" -> this.sendToNewMember
                             "showPopup" -> this.showPopup
                             "showEditCard" -> this.showEditCard
                             "requireConfirmation" -> this.requireConfirmation
-                            else -> error("Cannot find $next in AnnouncementParameters")
+                            else -> canNotFind(next.toString(), "OAnnouncementParameters")
                         }
                     }
-                }.lastReturnValue!!
+                }.lastReturnValue
             }
         }
 
@@ -231,16 +229,15 @@ object GroupAnnouncementsTemplate : Template, Testable {
                             "group" -> this.group
                             "allConfirmed", "allRead" -> this.allConfirmed
                             "confirmedMembersCount", "readCount" -> this.confirmedMembersCount
-                            "sender" -> this.sender ?: "NULL"
+                            "sender" -> this.sender ?: NullObject
                             "publicationTime", "time" -> this.publicationTime
                             "parameters" -> this.parameters
-                            else -> error("Cannot find $next in OnlineAnnouncement")
+                            else -> canNotFind(next.toString(), "OnlineAnnouncement")
                         }
                     }
-                }.lastReturnValue!!
+                }.lastReturnValue
             }
         }
 
     }
 }
-

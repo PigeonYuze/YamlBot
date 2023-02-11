@@ -1,5 +1,7 @@
 package com.pigeonyuze.template
 
+import com.pigeonyuze.YamlBot
+import kotlinx.coroutines.async
 import kotlin.reflect.KClass
 
 interface Template {
@@ -17,12 +19,14 @@ interface Template {
      * function will not return null!
      * if this return null then the function is not exist
      * */
-    suspend fun callOrNull(functionName: String,args: Parameter) : Any?{
-        if (functionName.startsWith("%")) functionName.drop(1)
-        if (functionName.endsWith("%")) functionName.dropLast(1)
-        if (functionName.endsWith("()")) functionName.dropLast(2)
-        if (!functionExist(functionName)) return null
-        return callValue(functionName,args)
+    suspend fun callOrNull(functionName: String, args: Parameter): Any? {
+        return YamlBot.async {
+            if (functionName.startsWith("%")) functionName.drop(1)
+            if (functionName.endsWith("%")) functionName.dropLast(1)
+            if (functionName.endsWith("()")) functionName.dropLast(2)
+            if (!functionExist(functionName)) return@async null
+            return@async callValue(functionName, args)
+        }.await()
     }
 
     fun values() : List<TemplateImpl<*>>
@@ -38,8 +42,14 @@ interface Template {
 }
 
 
-interface TemplateImpl<K : Any>{
+interface TemplateImpl<K : Any> {
     suspend fun execute(args: Parameter): K
     val type: KClass<K>
     val name: String
+
+    companion object {
+        fun TemplateImpl<Any>.canNotFind(what: String, where: String): Nothing {
+            throw NotImplementedError("Cannot find '$what' in '$where': at ${this.name} function")
+        }
+    }
 }

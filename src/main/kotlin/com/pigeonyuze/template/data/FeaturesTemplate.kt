@@ -2,7 +2,8 @@ package com.pigeonyuze.template.data
 
 import com.pigeonyuze.BotsTool
 import com.pigeonyuze.com.pigeonyuze.LoggerManager
-import com.pigeonyuze.command.illegalArgument
+import com.pigeonyuze.command.element.NullObject
+import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.TemplateImpl
@@ -38,7 +39,7 @@ object FeaturesTemplate : Template {
         return FeaturesTemplateImpl.list
     }
 
-    private sealed interface FeaturesTemplateImpl<K : Any> : TemplateImpl<K> {
+    sealed interface FeaturesTemplateImpl<K : Any> : TemplateImpl<K> {
         override val type: KClass<K>
         override val name: String
         override suspend fun execute(args: Parameter): K
@@ -157,7 +158,7 @@ object FeaturesTemplate : Template {
                 val saveData = args.subList(3,args.lastIndex)
                 when (args[2]) {
                     "read" -> {
-                        return Save.saveData[target]?.data ?: "null"
+                        return Save.saveData[target]?.data ?: NullObject
                     }
                     "put" -> {
                         Save.saveData[target] = SaveObject(target, saveData.stringList())
@@ -174,7 +175,7 @@ object FeaturesTemplate : Template {
                         }
 
                         for ((index, data) in saveData.withIndex()) {
-                            if (data == "null") continue
+                            if (data == NullObject) continue
                             oldData[index] = data.toString()
                         }
                         return true

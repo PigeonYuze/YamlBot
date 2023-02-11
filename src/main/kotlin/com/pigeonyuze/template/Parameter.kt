@@ -1,7 +1,7 @@
 package com.pigeonyuze.template
 
 import com.pigeonyuze.command.Command.Companion.parseData
-import com.pigeonyuze.command.illegalArgument
+import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
 import net.mamoe.mirai.contact.Contact
@@ -229,12 +229,12 @@ class Parameter constructor() {
     inner class ParameterValueReader {
         private val value: List<Any> = this@Parameter.value
 
-        var lastReturnValue: Any? = null
+        lateinit var lastReturnValue: Any
 
         private var readIndex: Int = 0
 
         @DslParameterReader
-        infix fun Int.read(run: Any.() -> Any) {
+        suspend infix fun Int.read(run: suspend Any.() -> Any) {
             this@ParameterValueReader.readIndex = this
 
             lastReturnValue = run(this@ParameterValueReader.value[readIndex])
@@ -311,6 +311,16 @@ class Parameter constructor() {
             )
         }
 
+        fun int(index: Int): Int {
+            this@ParameterValueReader.readIndex = index
+            return _stringValue[index].toIntOrNull() ?: errorType(index)
+        }
+
+        fun intOrNull(index: Int): Int? {
+            this@ParameterValueReader.readIndex = index
+            return _stringValue[index].toIntOrNull()
+        }
+
         fun next(): Any {
             readIndex++
             return value[readIndex]
@@ -333,7 +343,7 @@ class Parameter constructor() {
 }
 
 
-fun parameterOf(vararg element: String): Parameter {
+fun parameterOf(vararg element: Any): Parameter {
     return Parameter(element)
 }
 

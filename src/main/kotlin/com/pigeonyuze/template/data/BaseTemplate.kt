@@ -30,7 +30,7 @@ object BaseTemplate : Template {
     }
 
 
-    private sealed interface BaseTemplateImpl<K : Any> : TemplateImpl<K> {
+    sealed interface BaseTemplateImpl<K : Any> : TemplateImpl<K> {
         override val name: String
         override val type: KClass<K>
         override suspend fun execute(args: Parameter): K
@@ -223,9 +223,9 @@ object BaseTemplate : Template {
             override suspend fun execute(args: Parameter): String {
                 val obj = args[0]
                 val mapping = args.getMap(1)
-                var elseValue = "null"
+                var elseValue = "NULL"
                 for ((key, value) in mapping) {
-                    if (key == "#ELSE") elseValue = value
+                    if (key == "#ELSE") elseValue = "NULL"
                     if (key == obj) return value
                 }
                 /*

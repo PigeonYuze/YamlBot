@@ -1,7 +1,11 @@
 package com.pigeonyuze.command
 
 import com.pigeonyuze.com.pigeonyuze.LoggerManager
-import com.pigeonyuze.command.AnsweringMethod.*
+import com.pigeonyuze.command.element.AnsweringMethod
+import com.pigeonyuze.command.element.AnsweringMethod.*
+import com.pigeonyuze.command.element.Condition
+import com.pigeonyuze.command.element.TemplateYML
+import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Parameter.Companion.addAny
 import com.pigeonyuze.template.Parameter.Companion.removeFirst
