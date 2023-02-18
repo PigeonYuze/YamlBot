@@ -311,6 +311,13 @@ class Parameter constructor() {
             )
         }
 
+        fun intOrNull(readIndex: Int = this.readIndex): Int? {
+            this.readIndex = readIndex
+            return _stringValue[readIndex].toIntOrNull()
+        }
+
+        fun hasNext(): Boolean = readIndex < value.lastIndex
+
         fun next(): Any {
             readIndex++
             return value[readIndex]
