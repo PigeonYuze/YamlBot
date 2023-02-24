@@ -37,7 +37,7 @@ object HttpTemplate : Template {
         return HttpTemplateImpl.list
     }
 
-    private sealed interface HttpTemplateImpl<K : Any> : TemplateImpl<K> {
+    sealed interface HttpTemplateImpl<K : Any> : TemplateImpl<K> {
         override val name: String
         override val type: KClass<K>
         override suspend fun execute(args: Parameter): K

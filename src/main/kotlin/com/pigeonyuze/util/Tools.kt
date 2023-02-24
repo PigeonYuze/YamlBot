@@ -6,6 +6,15 @@ import net.mamoe.yamlkt.YamlMap
 import net.mamoe.yamlkt.YamlPrimitive
 
 
+inline fun <reified K, reified V> Map<*, *>.mapCast(): MutableMap<K, V> {
+    val map = mutableMapOf<K, V>()
+    for ((key, value) in this) {
+        if (key !is K || value !is V) throw ClassCastException()
+        map[key] = value
+    }
+    return map
+}
+
 fun String.listToStringDataToList(dropStart: Int = 1): List<String> {
     val spiltAllComma: MutableList<String> =
         this.substring(dropStart, length - dropStart).replace(", ", ",").split(",".toRegex()).toMutableList() //拆分所有的','
@@ -63,6 +72,16 @@ private fun String.toAny(): Any {
     } else (this)
 }
 
+fun String.isNumber(): Boolean {
+    for (b in this) {
+        when (b.code) {
+            in 0x30..0x39 -> continue //0~9
+            0x2B, 0x2D, 0x66, 0x62, 0x2E -> continue //d f . - +
+            else -> return false
+        }
+    }
+    return true
+}
 
 fun String.keyAndValueStringDataToMap(drop: Int = 0): Map<String, String> {
     val ret = mutableMapOf<String, String>()

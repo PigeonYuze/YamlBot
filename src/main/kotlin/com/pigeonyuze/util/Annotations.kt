@@ -29,6 +29,16 @@ annotation class SerializerData(val buildIndex: Int, val serializerJSONType: Ser
 
 }
 
+@Target(AnnotationTarget.CLASS)
+@NonGroup
+annotation class ReadObject
+
+@Target(AnnotationTarget.CLASS)
+@NonGroup
+annotation class SettingObject
+
+@Target(AnnotationTarget.CLASS)
+annotation class NonGroup
 
 @DslMarker
 annotation class DslParameterReader
