@@ -3,8 +3,8 @@ package com.pigeonyuze.test
 import com.pigeonyuze.template.data.GroupAnnouncementsTemplate
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import net.mamoe.mirai.event.AbstractEvent
+import org.jetbrains.annotations.TestOnly
 
 /**
  * 用于功能的测试
@@ -17,7 +17,9 @@ internal interface Testable {
      *
      * 在运行时会优先运行 [getEventFilter] 获取筛选器，再运行
      * */
-    suspend fun getAllTestObj(): List<suspend () -> Any>
+    suspend fun getAllTestObj(): List<suspend () -> Any> {
+        throw NotImplementedError("An operation is not implemented")
+    }
 
     /**
      * 如果事件符合 [getEventFilter] 后会调用此项 你可以通过此处获取事件
@@ -25,7 +27,7 @@ internal interface Testable {
      * @return 检测是否被重写 如果你重写了此项请返回一个非`null`值 不然
      * */
     suspend fun getEventForTestAllFunction(event: AbstractEvent): List<suspend () -> Any> {
-        throw Error("No impl!")
+        throw NotImplementedError("An operation is not implemented")
     }
 
     /**
@@ -36,6 +38,7 @@ internal interface Testable {
     }
 
     companion object {
+        @TestOnly
         suspend fun Testable.runTest(event: AbstractEvent) {
             val filter = this.getEventFilter() ?: { true }
             if (!filter.invoke(event)) {
@@ -44,19 +47,15 @@ internal interface Testable {
 
             kotlin.runCatching {
                 coroutineScope {
-
-                    launch {
-                        for ((index, value) in this@runTest.getEventForTestAllFunction(event).withIndex()) {
-                            println("Run Test When $index")
-                            value.invoke()
-                            println("Stop Test When $index")
-                            delay(2000L)
-                        }
-
+                    for ((index, value) in this@runTest.getEventForTestAllFunction(event).withIndex()) {
+                        println("Run Test When $index")
+                        value.invoke()
+                        println("Stop Test When $index")
+                        delay(2000L)
                     }
                 }
             }.recoverCatching {  // no impl
-                if (it.message != "No impl!") {
+                if (it !is NotImplementedError) {
                     throw it
                 }
                 for ((index, value) in this.getAllTestObj().withIndex()) {

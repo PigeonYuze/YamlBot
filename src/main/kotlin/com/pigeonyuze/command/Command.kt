@@ -1,7 +1,11 @@
 package com.pigeonyuze.command
 
 import com.pigeonyuze.com.pigeonyuze.LoggerManager
-import com.pigeonyuze.command.AnsweringMethod.*
+import com.pigeonyuze.command.element.AnsweringMethod
+import com.pigeonyuze.command.element.AnsweringMethod.*
+import com.pigeonyuze.command.element.Condition
+import com.pigeonyuze.command.element.TemplateYML
+import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Parameter.Companion.addAny
 import com.pigeonyuze.template.Parameter.Companion.removeFirst
@@ -168,7 +172,7 @@ sealed interface Command {
             return template.execute(args)
         }
 
-        fun Command.initImpl() {
+        private fun Command._initImpl() {
             val run by lazy { this.run }
             val name by lazy { this.name }
             val templateCallMap = templateCallName
@@ -202,7 +206,7 @@ sealed interface Command {
         override val condition: List<Condition> = listOf(),
     ) : Command {
         init {
-            initImpl()
+            _initImpl()
         }
         override fun isThis(commandMessage: String): Boolean {
             return commandMessage in name
@@ -219,7 +223,7 @@ sealed interface Command {
     ) : Command {
 
         init {
-            initImpl()
+            _initImpl()
         }
 
 
@@ -255,7 +259,7 @@ sealed interface Command {
         override val templateCallName: MutableMap<String, Any?> = templateCallNameImpl
 
         init {
-            initImpl()
+            _initImpl()
         }
 
         @Serializable

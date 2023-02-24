@@ -6,8 +6,9 @@ import com.pigeonyuze.YamlBot
 import com.pigeonyuze.YamlBot.reload
 import com.pigeonyuze.command.Command.*
 import com.pigeonyuze.command.Command.ArgCommand.Type.*
-import com.pigeonyuze.command.Condition.JudgmentMethod.*
 import com.pigeonyuze.command.YamlCommandDecoder.load
+import com.pigeonyuze.command.element.*
+import com.pigeonyuze.command.element.Condition.JudgmentMethod.*
 import com.pigeonyuze.template.asParameter
 import com.pigeonyuze.toPolymorphismObject
 import kotlinx.serialization.modules.plus
@@ -38,10 +39,10 @@ object YamlCommandDecoder : PluginDataStorage {
     //region Decoder
     private fun readToCommand(commandElement: YamlMap): NormalCommand? {
         // name: kotlin.collections.List<kotlin.String>
-        // answeringMethod: com.pigeonyuze.command.AnsweringMethod
+        // answeringMethod: com.pigeonyuze.command.element.AnsweringMethod
         // answerContent: kotlin.String
         // run: kotlin.collections.List<com.pigeonyuze.command.TemplateYML>
-        // condition: kotlin.collections.List<com.pigeonyuze.command.Condition>
+        // condition: kotlin.collections.List<com.pigeonyuze.command.element.Condition>
         val nameYaml = commandElement["name"] as? YamlList ?: return null
         val answeringMethodYaml = commandElement["answeringMethod"] as? YamlLiteral ?: return null
         val answerContentYaml = commandElement["answerContent"] as? YamlLiteral ?: return null
@@ -68,10 +69,10 @@ object YamlCommandDecoder : PluginDataStorage {
     // if you do not first call this function,then maybe a ArgCommand will be normal Command
     private fun readToArgsCommand(commandElement: YamlMap): ArgCommand? {
         // name: kotlin.collections.List<kotlin.String>
-        // answeringMethod: com.pigeonyuze.command.AnsweringMethod
+        // answeringMethod: com.pigeonyuze.command.element.AnsweringMethod
         // answerContent: kotlin.String
         // run: kotlin.collections.List<com.pigeonyuze.command.TemplateYML>
-        // condition: kotlin.collections.List<com.pigeonyuze.command.Condition>
+        // condition: kotlin.collections.List<com.pigeonyuze.command.element.Condition>
         // argsSplit: kotlin.Char
         // useLaterAddParams: kotlin.Boolean
         // laterAddParamsTimeoutSecond: kotlin.Int
@@ -160,7 +161,7 @@ object YamlCommandDecoder : PluginDataStorage {
     private fun readToOnlyCommand(commandElement: YamlMap): OnlyRunCommand? {
         // name: kotlin.collections.List<kotlin.String>
         // run: kotlin.collections.List<com.pigeonyuze.command.TemplateYML>
-        // condition: kotlin.collections.List<com.pigeonyuze.command.Condition>
+        // condition: kotlin.collections.List<com.pigeonyuze.command.element.Condition>
         val nameYaml = commandElement["name"] as? YamlList ?: return null
         val runYaml = commandElement["run"] as? YamlList ?: return null
         val conditionYaml = commandElement["condition"] as? YamlList ?: return null

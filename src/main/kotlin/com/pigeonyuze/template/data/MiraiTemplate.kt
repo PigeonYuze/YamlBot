@@ -2,7 +2,8 @@ package com.pigeonyuze.template.data
 
 import com.pigeonyuze.BotsTool
 import com.pigeonyuze.YamlBot
-import com.pigeonyuze.command.illegalArgument
+import com.pigeonyuze.command.element.NullObject
+import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.runConfigsReload
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
@@ -48,7 +49,7 @@ object MiraiTemplate : Template {
         return MiraiTemplateImpl.list
     }
 
-    private sealed interface MiraiTemplateImpl<K : Any> : TemplateImpl<K> {
+    sealed interface MiraiTemplateImpl<K : Any> : TemplateImpl<K> {
 
         companion object {
             val list: List<MiraiTemplateImpl<*>> = listOf(
@@ -279,7 +280,7 @@ object MiraiTemplate : Template {
                     "groupName" -> group!!.name
                     "groupPerm" -> group!!.botPermission.name
                     "groupOwner" -> group!!.owner
-                    else -> "null"
+                    else -> NullObject
                 }
                 return ret.toString()
             }

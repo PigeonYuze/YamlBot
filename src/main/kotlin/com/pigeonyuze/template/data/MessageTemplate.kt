@@ -34,7 +34,7 @@ object MessageTemplate : Template {
     override fun values(): List<TemplateImpl<*>> {
         return MessageTemplateImpl.list
     }
-    private sealed interface MessageTemplateImpl<K : Any> : TemplateImpl<K> {
+    sealed interface MessageTemplateImpl<K : Any> : TemplateImpl<K> {
 
         companion object {
             val list: List<MessageTemplateImpl<*>> = listOf( //每一种信息都应该含有create和read

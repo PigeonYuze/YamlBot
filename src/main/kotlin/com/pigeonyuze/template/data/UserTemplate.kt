@@ -31,7 +31,7 @@ object UserTemplate : Template {
     }
 
 
-    private sealed interface UserTemplateImpl<K : Any> : TemplateImpl<K> {
+    sealed interface UserTemplateImpl<K : Any> : TemplateImpl<K> {
 
         companion object {
             val list: List<UserTemplateImpl<*>> = listOf(

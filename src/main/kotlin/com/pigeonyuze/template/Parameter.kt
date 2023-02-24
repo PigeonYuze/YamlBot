@@ -1,7 +1,7 @@
 package com.pigeonyuze.template
 
 import com.pigeonyuze.command.Command.Companion.parseData
-import com.pigeonyuze.command.illegalArgument
+import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
 import net.mamoe.mirai.contact.Contact
@@ -98,7 +98,7 @@ class Parameter constructor() {
     private operator fun set(index: Int, newValue: Any) = value.set(index, newValue)
     fun withIndex() = value.withIndex()
     operator fun get(index: Int) = _stringValue[index]
-    fun subList(fromIndex: Int, toIndex: Int): MutableList<Any> {
+    fun subList(fromIndex: Int, toIndex: Int = lastIndex): MutableList<Any> {
         Group
         if (fromIndex < 0) throw IndexOutOfBoundsException("fromIndex = $fromIndex")
         if (toIndex > size) throw IndexOutOfBoundsException("toIndex = $toIndex")
@@ -115,7 +115,7 @@ class Parameter constructor() {
 
     fun subArgs(fromIndex: Int, toIndex: Int = value.lastIndex) = Parameter(value.subList(fromIndex, toIndex))
     fun random() = this[(0..size).random()]
-    private fun errorType(index: Int): Nothing = illegalArgument("Error parameter type in $index")
+    fun errorType(index: Int): Nothing = illegalArgument("Error parameter type in $index")
     fun parseElement(templateCall: MutableMap<String, Any?>): Parameter { //不对本值进行任何修改，具有唯一性
         val ret = Parameter()
         for (arg in _stringValue) {
@@ -187,7 +187,7 @@ class Parameter constructor() {
         } else value.add(oldValue)
     }
 
-    suspend fun read(run: suspend ParameterValueReader.() -> Any): ParameterValueReader {
+    suspend fun <T> read(run: suspend ParameterValueReader.() -> T): ParameterValueReader {
         val reader = ParameterValueReader()
         run.invoke(reader)
         return reader
@@ -229,12 +229,14 @@ class Parameter constructor() {
     inner class ParameterValueReader {
         private val value: List<Any> = this@Parameter.value
 
-        var lastReturnValue: Any? = null
+        lateinit var lastReturnValue: Any
 
-        private var readIndex: Int = 0
+        var readIndex: Int = 0
+
+        fun hasNext() = readIndex < value.lastIndex
 
         @DslParameterReader
-        infix fun Int.read(run: Any.() -> Any) {
+        suspend infix fun Int.read(run: suspend Any.() -> Any) {
             this@ParameterValueReader.readIndex = this
 
             lastReturnValue = run(this@ParameterValueReader.value[readIndex])
@@ -265,6 +267,11 @@ class Parameter constructor() {
             )
         }
 
+        fun bool(index: Int): Boolean {
+            this@ParameterValueReader.readIndex = index
+            return _stringValue[index].toBooleanStrictOrNull() ?: errorType(index)
+        }
+
         @DslParameterReader
         infix fun Int.map(run: Map<String, String>.() -> Any) {
             this@ParameterValueReader.readIndex = this
@@ -276,6 +283,15 @@ class Parameter constructor() {
                     else -> errorType(this)
                 }
             )
+        }
+
+        fun map(index: Int = readIndex): Map<out Any?, Any?> {
+            this@ParameterValueReader.readIndex = index
+            return when (val value = value[index]) {
+                is Map<*, *> -> value
+                is String -> value.keyAndValueStringDataToMap().makeStringToAny()
+                else -> errorType(index)
+            }
         }
 
         @DslParameterReader
@@ -301,6 +317,15 @@ class Parameter constructor() {
             )
         }
 
+        fun list(index: Int = readIndex): List<*> {
+            this@ParameterValueReader.readIndex = index
+            return when (val value = value[index]) {
+                is List<*> -> value
+                is String -> value.listToStringDataToList()
+                else -> errorType(index)
+            }
+        }
+
         @DslParameterReader
         infix fun Int.messageEvent(run: MessageEvent.() -> Any) {
             this@ParameterValueReader.readIndex = this
@@ -309,6 +334,16 @@ class Parameter constructor() {
                 if (value is MessageEvent) value
                 else errorType(this)
             )
+        }
+
+        fun int(index: Int): Int {
+            this@ParameterValueReader.readIndex = index
+            return _stringValue[index].toIntOrNull() ?: errorType(index)
+        }
+
+        fun intOrNull(index: Int = readIndex): Int? {
+            this@ParameterValueReader.readIndex = index
+            return _stringValue[index].toIntOrNull()
         }
 
         fun next(): Any {
@@ -333,7 +368,7 @@ class Parameter constructor() {
 }
 
 
-fun parameterOf(vararg element: String): Parameter {
+fun parameterOf(vararg element: Any): Parameter {
     return Parameter(element)
 }
 
@@ -353,3 +388,5 @@ fun YamlList.asParameter(): Parameter {
 fun List<String>.asParameter(): Parameter {
     return Parameter(this)
 }
+
+fun Any.asParameter(): Parameter = Parameter(listOf(this))

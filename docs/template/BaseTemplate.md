@@ -161,16 +161,16 @@ fun get(value: String) = when (value) {
 ```java
 //java
 class Run {
-  String get(String value) {
-    return switch (value) {
-      case "hello":
-        "world!";
-      case "world":
-        "hello,";
-      default:
-        "hello,world!";
-    };
-  }
+    String get(String value) {
+        return switch (value) {
+            case "hello":
+                "world!";
+            case "world":
+                "hello,";
+            default:
+                "hello,world!";
+        };
+    }
 }
 ```
 
@@ -268,16 +268,17 @@ fun get(value: String) = when (value) {
 ```java
 //java
 class Run {
-  String get(String value) {
-    return switch (value) {
-      case "hello":
-        "world!";
-      case "world":
-        "hello,";
-      default:
-        "hello,world!";
-    };
-  }
+    String get(String value) {
+        return switch (value) {
+            case "hello":
+                "world!";
+            case "world":
+                "hello,";
+            default:
+                "hello,world!";
+        };
+    }
+
 }
 ```
 

@@ -4,8 +4,10 @@ import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.TemplateImpl
 import com.pigeonyuze.util.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import java.math.BigDecimal
 import java.util.*
@@ -30,7 +32,7 @@ object BaseTemplate : Template {
     }
 
 
-    private sealed interface BaseTemplateImpl<K : Any> : TemplateImpl<K> {
+    sealed interface BaseTemplateImpl<K : Any> : TemplateImpl<K> {
         override val name: String
         override val type: KClass<K>
         override suspend fun execute(args: Parameter): K
@@ -121,25 +123,26 @@ object BaseTemplate : Template {
 
             override suspend fun execute(args: Parameter): String {
                 val json = args.getOrNull(0) ?: error(name, args.size)
-                return coroutineScope {
-                    async {
-                        var jsonElement = Json.parseToJsonElement(json)
-                        for (arg in args.subList(1, args.lastIndex)) {
-                            if (arg !is String) continue
-                            jsonElement = if (arg.toIntOrNull() != null) { //is number
-                                jsonElement.jsonArray.getOrNull(arg.toInt()) ?: jsonElement.jsonNull
+                return withContext(Dispatchers.Default) {
+                    var jsonElement = Json.parseToJsonElement(json)
+                    args.read {
+                        do {
+                            val arg = next()
+                            var mayInt: Int?
+                            jsonElement = if (intOrNull().also { mayInt = it } != null) { //is number
+                                jsonElement.jsonArray.getOrNull(mayInt!!) ?: jsonElement.jsonNull
                             } else if (jsonElement is JsonObject) {
                                 jsonElement.jsonObject[arg] ?: error("Cannot find $arg in $jsonElement")
                             } else {
                                 jsonElement.jsonPrimitive
                             }
-                        }
-                        val fieldData = jsonElement.toString()
-                        return@async if (fieldData.startsWith('"') && fieldData.endsWith('"')) {
-                            fieldData.dropFirstAndLast()
-                        } else fieldData
+                        } while (hasNext())
                     }
-                }.await()
+                    val fieldData = jsonElement.toString()
+                    return@withContext if (fieldData.startsWith('"') && fieldData.endsWith('"')) {
+                        fieldData.dropFirstAndLast()
+                    } else fieldData
+                }
             }
 
         }
@@ -223,9 +226,9 @@ object BaseTemplate : Template {
             override suspend fun execute(args: Parameter): String {
                 val obj = args[0]
                 val mapping = args.getMap(1)
-                var elseValue = "null"
+                var elseValue = "NULL"
                 for ((key, value) in mapping) {
-                    if (key == "#ELSE") elseValue = value
+                    if (key == "#ELSE") elseValue = "NULL"
                     if (key == obj) return value
                 }
                 /*

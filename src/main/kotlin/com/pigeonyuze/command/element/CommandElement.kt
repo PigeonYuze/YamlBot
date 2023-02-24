@@ -1,5 +1,6 @@
-package com.pigeonyuze.command
+package com.pigeonyuze.command.element
 
+import com.pigeonyuze.command.Command
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.asParameter
@@ -192,6 +193,9 @@ enum class ImportType {
     },
     GROUP_ANNOUNCEMENTS {
         override fun getProjectClass(): Template = GroupAnnouncementsTemplate
+    },
+    GROUP_ACTIVE {
+        override fun getProjectClass(): Template = GroupActiveTemplate
     }
 
     ;
