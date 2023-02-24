@@ -3,8 +3,8 @@ package com.pigeonyuze.test
 import com.pigeonyuze.template.data.GroupAnnouncementsTemplate
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import net.mamoe.mirai.event.AbstractEvent
+import org.jetbrains.annotations.TestOnly
 
 /**
  * 用于功能的测试
@@ -38,6 +38,7 @@ internal interface Testable {
     }
 
     companion object {
+        @TestOnly
         suspend fun Testable.runTest(event: AbstractEvent) {
             val filter = this.getEventFilter() ?: { true }
             if (!filter.invoke(event)) {
@@ -46,15 +47,11 @@ internal interface Testable {
 
             kotlin.runCatching {
                 coroutineScope {
-
-                    launch {
-                        for ((index, value) in this@runTest.getEventForTestAllFunction(event).withIndex()) {
-                            println("Run Test When $index")
-                            value.invoke()
-                            println("Stop Test When $index")
-                            delay(2000L)
-                        }
-
+                    for ((index, value) in this@runTest.getEventForTestAllFunction(event).withIndex()) {
+                        println("Run Test When $index")
+                        value.invoke()
+                        println("Stop Test When $index")
+                        delay(2000L)
                     }
                 }
             }.recoverCatching {  // no impl

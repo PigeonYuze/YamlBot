@@ -1,6 +1,7 @@
 package com.pigeonyuze.com.pigeonyuze
 
 import com.pigeonyuze.BotsTool
+import com.pigeonyuze.LoggerConfig
 import com.pigeonyuze.YamlBot
 import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.message.data.ForwardMessageBuilder
@@ -10,6 +11,7 @@ import java.util.*
 
 object LoggerManager {
 
+    private inline val notRun get() = !LoggerConfig.open
 
     private val miraiLogger = YamlBot.logger
 
@@ -19,35 +21,40 @@ object LoggerManager {
     @JvmOverloads
     @JvmStatic
     fun loggingError(from: Any = defaultfrom, message: String?) {
+        if (notRun) return
         miraiLogger.error("[$from] $message")
         trySendLogMessage(message ?: "")
     }
 
     fun loggingWarn(from: Any = defaultfrom, message: String?){
+        if (notRun) return
         miraiLogger.warning("[$from] $message")
     }
 
     @JvmOverloads
     @JvmStatic
     fun loggingInfo(from: Any = defaultfrom, message: String?) {
-         miraiLogger.info("[$from] $message")
+        if (notRun) return
+        miraiLogger.info("[$from] $message")
     }
 
     @JvmOverloads
     @JvmStatic
     fun loggingDebug(from: Any = defaultfrom, message: String?) {
+        if (notRun) return
         miraiLogger.debug("[$from] $message")
     }
 
     @JvmOverloads
     @JvmStatic
     fun loggingTrace(from: Any = defaultfrom, message: String?) {
+        if (notRun) return
         miraiLogger.verbose("[$from] $message")
     }
 
     private fun trySendLogMessage(message: String) {
         val bot = BotsTool.firstBot
-        val group = BotsTool.getGroupOrNullJava(1L) ?: return
+        val group = BotsTool.getGroupOrNullJava(LoggerConfig.debugGroup) ?: return
         val forwardMessageBuilder = ForwardMessageBuilder(group)
         forwardMessageBuilder.add(
             bot,

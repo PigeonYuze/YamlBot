@@ -9,11 +9,11 @@ interface Template {
     /**
      *
      * */
-    suspend fun callValue(functionName: String,args: Parameter) : Any
+    suspend fun callValue(functionName: String, args: Parameter): Any
 
-    fun functionExist(functionName: String) : Boolean
+    fun functionExist(functionName: String): Boolean
 
-    fun findOrNull(functionName: String) : TemplateImpl<*>?
+    fun findOrNull(functionName: String): TemplateImpl<*>?
 
     /**
      * function will not return null!
@@ -29,13 +29,14 @@ interface Template {
         }.await()
     }
 
-    fun values() : List<TemplateImpl<*>>
+
+    fun values(): List<TemplateImpl<*>>
 
     /**
      * 该项适用于已知的函数调用
      * */
-    suspend fun call(functionName: String, args: Parameter) : Any{
-        return callOrNull(functionName,args) ?: error("Cannot find $functionName")
+    suspend fun call(functionName: String, args: Parameter): Any {
+        return callOrNull(functionName, args) ?: error("Cannot find $functionName")
     }
 
 
@@ -48,8 +49,13 @@ interface TemplateImpl<K : Any> {
     val name: String
 
     companion object {
-        fun TemplateImpl<Any>.canNotFind(what: String, where: String): Nothing {
+        fun TemplateImpl<out Any>.canNotFind(what: String, where: String): Nothing {
             throw NotImplementedError("Cannot find '$what' in '$where': at ${this.name} function")
+        }
+
+
+        fun TemplateImpl<out Any>.nonImpl(what: String, where: String, moreMessage: String = ""): Nothing {
+            throw NotImplementedError("No implemented function'$what' in '$where': at ${this.name} function${if (moreMessage.isNotEmpty()) "\n$moreMessage" else ""} ")
         }
     }
 }

@@ -15,29 +15,55 @@ import net.mamoe.mirai.console.data.ValueDescription
 import net.mamoe.mirai.console.data.value
 
 
-fun runConfigsReload()  {
+fun runConfigsReload() {
     UserConfig.reload()
     CommandConfigs.load()
+    LoggerConfig.reload()
+}
+
+object LoggerConfig : AutoSavePluginConfig("LoggerConfig") {
+    @ValueDescription(
+        """
+        是否开启日志系统，当关闭时不再会输出任何日志信息
+        除非出现了要求被用户查看的错误，如运行错误或者错误的参数时使用
+    """
+    )
+    val open: Boolean by value(true)
+
+    @ValueDescription(
+        """
+        当本插件出现相关报错时会向这个群聊发送报错信息
+    """
+    )
+    val debugGroup: Long by value(114514L)
 }
 
 
-object UserConfig : AutoSavePluginConfig("UserConfig"){
+object UserConfig : AutoSavePluginConfig("UserConfig") {
     @ValueDescription("是否开启用户设置")
-    val open : Boolean by value(false)
-    @ValueDescription("""
+    val open: Boolean by value(false)
+
+    @ValueDescription(
+        """
      用户号的开始位
      如果为1000 则注册时展示的UID为 1001(1000+1)  
-        """)
-    val userStartIndex : Int by value(1000)
-    @ValueDescription("""
+        """
+    )
+    val userStartIndex: Int by value(1000)
+
+    @ValueDescription(
+        """
         默认用户名的选择
         当为 "nick" 时 采用用户的qq昵称
         当为 "name" 时 采用用户的注册群卡片名称(如果不是在群内 则采取昵称)
         如果为其他则以值作为标注
         
-    """)
-    val userNickSource : String by value("nick")
-    @ValueDescription("""
+    """
+    )
+    val userNickSource: String by value("nick")
+
+    @ValueDescription(
+        """
         其他的元素
         你可以提供提供设置此项来为你的bot的User增加一个参数
         
