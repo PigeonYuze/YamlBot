@@ -29,16 +29,10 @@
 - 无参数 - 由0到2147483647的随机数
 - 1个参数
   1. 由0到此项的随机数 : `Int`
-  1. 由0到此项的随机数 : `Int`
 - 2个参数
   1. 随机数的起点(包括该项) : `Int`
   2. 随机数的起点(包括该项) : `Int`
-  1. 随机数的起点(包括该项) : `Int`
-  2. 随机数的起点(包括该项) : `Int`
 - 3个参数
-  1. 随机数的起点(包括该项) : `Int`
-  2. 随机数的终点(包含该项) : `Int`
-  3. 是否包含负数 : `true` or `false`
   1. 随机数的起点(包括该项) : `Int`
   2. 随机数的终点(包含该项) : `Int`
   3. 是否包含负数 : `true` or `false`
@@ -158,10 +152,10 @@ switch: #非标准写法/也许未来会支持这样
 ```kotlin
 //kotlin
 fun get(value: String) = when (value) {
-        "hello" -> "world!"
-        "world" -> "hello,"
-        else -> "hello,world!"
-    }
+    "hello" -> "world!"
+    "world" -> "hello,"
+    else -> "hello,world!"
+  }
 ```
 
 ```java
@@ -265,10 +259,10 @@ switch: #非标准写法/也许未来会支持这样
 ```kotlin
 //kotlin
 fun get(value: String) = when (value) {
-        "hello" -> "world!"
-        "world" -> "hello,"
-        else -> "hello,world!"
-    }
+    "hello" -> "world!"
+    "world" -> "hello,"
+    else -> "hello,world!"
+  }
 ```
 
 ```java
@@ -284,6 +278,7 @@ class Run {
                 "hello,world!";
         };
     }
+
 }
 ```
 
@@ -342,4 +337,3 @@ class Run {
 **参数说明**
 
 提供两个参数
-
