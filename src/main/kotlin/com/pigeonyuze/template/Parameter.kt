@@ -350,6 +350,11 @@ class Parameter constructor() {
             readIndex++
             return value[readIndex]
         }
+
+        fun nextOrNull(): Any? {
+            readIndex++
+            return value.getOrNull(readIndex)
+        }
     }
 
     companion object {
