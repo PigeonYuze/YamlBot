@@ -93,7 +93,7 @@ object YamlCommandDecoder : PluginDataStorage {
         val argsSplit = (commandElement["argsSplit"] as? YamlLiteral)?.content ?: " "
         val requestYaml = commandElement["request"] as? YamlMap
         val describeYaml = commandElement["describe"] as? YamlMap
-
+        val isPrefixForAll = (commandElement["isPrefix"] as? YamlLiteral)?.content?.toBooleanStrictOrNull() ?: true
         val name = mutableListOf<String>()
         for (oneNameElement in nameYaml) {
             if (oneNameElement !is YamlLiteral) name.add(oneNameElement.toString())
@@ -154,7 +154,8 @@ object YamlCommandDecoder : PluginDataStorage {
             laterAddParamsTimeoutSecond,
             argsSize,
             request,
-            describe
+            describe,
+            isPrefixForAll
         )
     }
 
