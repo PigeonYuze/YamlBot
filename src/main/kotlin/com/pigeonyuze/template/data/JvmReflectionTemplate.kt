@@ -141,7 +141,7 @@ object JvmReflectionTemplate : Template {
                 ): Any? {
                     val args = method.parameters
                     if (args.size != parameter.size) return null
-
+                    method.isAccessible = true
                     val runArgs = runSwitchArray(args, parameter)
                     if (runArgs.isEmpty()) {
                         return method.invoke(fromObj)
