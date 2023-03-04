@@ -128,7 +128,7 @@ fun YamlElement.toAnyOrNull() : Any? =
         }
         is YamlList -> {
             val anyList = mutableListOf<Any?>()
-            for (value in this.content){
+            for (value in this.content) {
                 anyList.add(value.toAnyOrNull())
             }
             anyList
@@ -136,6 +136,16 @@ fun YamlElement.toAnyOrNull() : Any? =
     }
 
 fun String.isLong() = this.toLongOrNull() != null
+
+fun String.isPackageName(): Boolean {
+    for (b in this) {
+        if (b == '.') continue
+        if (b.code in 0x61..0x7a) continue /* a ~ z */
+        if (b.code in 0x41..0x5a) continue /* A ~ Z */
+        return false
+    }
+    return true
+}
 
 fun String.isBoolean() = this.toBooleanStrictOrNull() != null
 
