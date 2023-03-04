@@ -467,7 +467,7 @@ object JvmReflectionTemplate : Template {
                         name
                     ) as KProperty1.Getter<*, *> //No extension property impl!
                     val instance = obj ?: runCatching {
-                        kClass.createInstance()
+                        kClass.objectInstance ?: kClass.createInstance()
                     }.recoverCatching { // If object class are no or many such constructors
                         throw TaskException(
                             "Cannot get $kClass 's properties, because cannot create instance",
