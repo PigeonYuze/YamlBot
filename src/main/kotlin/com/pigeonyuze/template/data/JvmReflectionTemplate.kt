@@ -1,18 +1,19 @@
 package com.pigeonyuze.template.data
 
+import com.pigeonyuze.com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.TemplateImpl
-import com.pigeonyuze.util.TaskException
-import com.pigeonyuze.util.isPackageName
-import com.pigeonyuze.util.keyAndValueStringDataToMap
-import com.pigeonyuze.util.listToStringDataToList
+import com.pigeonyuze.util.*
+import java.lang.reflect.Field
+import java.lang.reflect.InaccessibleObjectException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import kotlin.reflect.*
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.jvmErasure
+import java.lang.reflect.Parameter as JavaParameter
 
 object JvmReflectionTemplate : Template {
 
@@ -52,7 +53,8 @@ object JvmReflectionTemplate : Template {
                 JavaReflection.JavaReflectionMethod,
                 JavaReflection.JavaReflectionField,
                 JavaReflection.JavaReflectionConstruct,
-                JavaReflection.JavaReflectionSetField
+                JavaReflection.JavaReflectionSetField,
+                JavaReflection.JavaReflectionSetFinalField
             )
 
             private fun nameCast(simpleName: String, castObj: Any): Any {
@@ -141,16 +143,17 @@ object JvmReflectionTemplate : Template {
                     if (args.size != parameter.size) return null
 
                     val runArgs = runSwitchArray(args, parameter)
-
-
+                    if (runArgs.isEmpty()) {
+                        return method.invoke(fromObj)
+                    }
                     return method.invoke(fromObj, runArgs)
                 }
 
                 private fun runSwitchArray(
-                    args: Array<out java.lang.reflect.Parameter>,
+                    args: Array<out JavaParameter>,
                     parameter: List<*>,
-                ): Array<Any> {
-                    val runArgs = arrayOf<Any>(args.size)
+                ): Array<Any?> {
+                    val runArgs = arrayOfNulls<Any>(args.size)
                     for ((index, value) in parameter.withIndex()) {
                         val thisParameter = args[index]
 
@@ -171,11 +174,13 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Any {
                     return args.read {
-                        val name = args[0]
+                        val name = this[0]
                         val javaClass = classValueMap.getOrPut(name) { Class.forName(name) }
 
                         //try to build
-                        val constructorArg = list(2)
+                        val constructorArg =
+                            listOrNull(1) ?: return@read javaClass.getDeclaredConstructor().newInstance()
+
                         val all = javaClass.constructors
                         var instanceAny: Any? = null
                         for (constructor in all) {
@@ -188,7 +193,7 @@ object JvmReflectionTemplate : Template {
                             throw ClassCastException("Cannot build ${javaClass.simpleName}")
                         }
                         return@read instanceAny
-                    }.lastReturnValue
+                    }
                 }
             }
 
@@ -200,7 +205,7 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Any {
                     return args.read {
-                        val methodName = args[0]
+                        val methodName = this[0]
                         val parameter = list(1)
                         val obj = next()
                         if (obj is String && obj.isPackageName()) {
@@ -213,7 +218,7 @@ object JvmReflectionTemplate : Template {
                                 method,
                                 null,
                                 parameter
-                            )
+                            ) ?: NullObject
 
                         }
                         val javaClass = obj.javaClass
@@ -224,8 +229,8 @@ object JvmReflectionTemplate : Template {
                             methods.first(),
                             obj,
                             parameter
-                        )
-                    }.lastReturnValue
+                        ) ?: NullObject
+                    }
                 }
 
                 private fun getMethod(
@@ -234,7 +239,9 @@ object JvmReflectionTemplate : Template {
                     parameter: List<*>,
                 ): List<Method> {
                     val methods =
-                        javaClass.methods.filter { it.name == methodName || it.parameters.size == parameter.size }
+                        javaClass.methods.filter {
+                            it.name == methodName && it.parameters.size == parameter.size
+                        }
                     if (methods.isEmpty()) {
                         throw NoSuchMethodError("Cannot found methods $methodName with args: $parameter")
                     }
@@ -258,21 +265,89 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Any {
                     return args.read {
-                        val name = args[0]
-                        if (finalValueMap.containsKey(name)) return@read finalValueMap[name]
+                        val name = this[0]
+                        if (finalValueMap.containsKey(name)) return@read finalValueMap[name]!!
 
                         val obj = next()
                         val javaClass = obj.javaClass
 
                         val field = javaClass.getDeclaredField(name)
-
+                        field.isAccessible = true
                         val fieldValue: Any = field.get(obj)
                         if (Modifier.isFinal(field.modifiers)) {
                             finalValueMap[name] = fieldValue
                         }
 
                         return@read fieldValue
-                    }.lastReturnValue
+                    }
+                }
+            }
+
+            object JavaReflectionSetFinalField : JavaReflection<Any> {
+                override val name: String
+                    get() = "setFinalFieldJava"
+                override val type: KClass<Any>
+                    get() = Any::class
+
+                override suspend fun execute(args: Parameter): Any {
+                    return args.read {
+                        val name = this[0]
+                        val obj = next()
+                        val newValue = next()
+                        val javaClass = obj.javaClass
+
+                        val field = javaClass.getDeclaredField(name)
+                        field.isAccessible = true
+                        /* The fields of 'static final' cannot be modified directly */
+                        if (Modifier.isFinal(field.modifiers) && Modifier.isStatic(field.modifiers)) {
+                            // WARNING:
+                            //  The following code is likely to cause an error at runtime or the operation fails
+                            //  This depends on the JDK version of the user
+                            //  For example:
+                            //   Using 'JDK Oracle OpenJdk version 17.0.1' will throw error java.lang.reflect.InaccessibleObjectException
+                            //   Using 'JDK Eclipse Temurin version 11.0.1' will be unable to run code
+                            //  In general, users need to modify the JVM running options to run this feature
+                            // about: https://stackoverflow.com/questions/41265266/
+
+                            /* For from jdk8 to jdk17 version get modifiers */
+                            /* If `getDeclaredField("modifiers")` may cannot find modifiers field */
+                            kotlin.runCatching {
+                                val getFieldMethod0 = Class::class.java.getDeclaredMethod(
+                                    "getDeclaredFields0",
+                                    Boolean::class.javaPrimitiveType
+                                )
+                                getFieldMethod0.isAccessible = true
+                                val fields = getFieldMethod0.invoke(Field::class.java, false) as Array<*>
+                                for (modifiers in fields) {
+                                    if (modifiers !is Field) continue
+
+                                    if (modifiers.name == "modifiers") {
+                                        modifiers.isAccessible = true
+                                        /* Drop final property */
+                                        modifiers.setInt(field, field.modifiers and Modifier.FINAL.inv())
+                                    }
+                                }
+                            }.recoverCatching {
+                                if (it is InaccessibleObjectException) {
+                                    LoggerManager.loggingError(
+                                        "template-setFinalFieldJava",
+                                        "The specified field could not be modified because a InaccessibleObjectException error occurred while trying to modify 'getDeclaredFields0' by reflection,\nPlease add '--add-opens java.base/java.lang=ALL-UNNAMED' to JVM running options"
+                                    )
+                                    throw TaskException()
+                                }
+                                throw it
+                            }
+
+                        }
+
+                        field.set(obj, newValue)
+                        val nowValue = javaClass.getDeclaredField(name)
+                        if (Modifier.isFinal(field.modifiers)) {
+                            finalValueMap[name] = nowValue
+                        }
+
+                        return@read nowValue
+                    }
                 }
             }
 
@@ -285,7 +360,7 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Boolean {
                     return args.read {
-                        val name = args[0]
+                        val name = this[0]
                         if (finalValueMap.containsKey(name)) return@read false
 
                         val obj = next()
@@ -296,10 +371,11 @@ object JvmReflectionTemplate : Template {
                         if (Modifier.isFinal(field.modifiers)) {
                             return@read false
                         }
+                        field.isAccessible = true
                         field.set(obj, newValue)
 
                         return@read true
-                    }.lastReturnValue as Boolean
+                    }
                 }
             }
         }
@@ -320,13 +396,20 @@ object JvmReflectionTemplate : Template {
                     name: String,
                     isGetting: Boolean = true,
                 ): KProperty.Accessor<*> {
+                    val allProperties =
+                        /* If class is `Object`,then memberProperties is empty,but declaredMemberProperties is not */
+                        if (kotlinClass.isObject) kotlinClass.declaredMemberProperties else kotlinClass.memberProperties
                     /* Use memberProperties, staticProperties only for Java class */
-                    val properties = kotlinClass.memberProperties.filter {
+                    val properties = allProperties.filter {
                         it.name == name
                     }
 
+                    if (properties.isEmpty()) {
+                        throw NoSuchElementException("Cannot find property $name")
+                    }
+
                     if (properties.size != 1) {
-                        conflictingOverloadsFunctionToString(properties)
+                        throw NoSuchMethodException(conflictingOverloadsFunctionToString(properties))
                     }
 
                     val property = properties.first()
@@ -360,15 +443,14 @@ object JvmReflectionTemplate : Template {
                             if (accessor.instanceParameter == null) {
                                 return@let it
                             }
-
                             it[accessor.instanceParameter!!] = obj ?: runCatching {
-                                kClass.createInstance()
+                                kClass.objectInstance ?: kClass.createInstance() // Object or non-object class
                             }.recoverCatching { error -> // If object class are no or many such constructors
                                 throw TaskException(
                                     "Cannot get $kClass 's properties, because cannot create instance",
                                     error
                                 )
-                            }
+                            }.getOrThrow()
                             it
                         }
                     )
@@ -391,7 +473,7 @@ object JvmReflectionTemplate : Template {
                             "Cannot get $kClass 's properties, because cannot create instance",
                             it
                         )
-                    }
+                    }.getOrThrow()
                     val value = accessor.callSuspend(instance)
                     /* val -> KProperty */
                     /* var -> KMutableProperty(super: KProperty) */
@@ -457,16 +539,16 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Any {
                     return args.read {
-                        val name = args[0]
-                        if (finalValueMap.containsKey(name)) return@read finalValueMap[name]
-                        val classPackage = args[1]
+                        val name = this[0]
+                        if (finalValueMap.containsKey(name)) return@read finalValueMap[name]!!
+                        val classPackage = this[1]
                         val kotlinClass = kClassValueMap.getOrPut(classPackage) { Class.forName(classPackage).kotlin }
 
                         return@read propertiesGetting(
                             kotlinClass,
                             name
                         ) ?: NullObject
-                    }.lastReturnValue
+                    }
                 }
 
 
@@ -480,8 +562,8 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Any {
                     return args.read {
-                        val name = args[0]
-                        if (finalValueMap.containsKey(name)) return@read finalValueMap[name]
+                        val name = this[0]
+                        if (finalValueMap.containsKey(name)) return@read finalValueMap[name]!!
                         val classObj = next()
                         val kotlinClass = classObj::class
 
@@ -490,7 +572,7 @@ object JvmReflectionTemplate : Template {
                             name,
                             classObj
                         ) ?: NullObject
-                    }.lastReturnValue
+                    }
                 }
 
 
@@ -504,20 +586,20 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Boolean {
                     return args.read {
-                        val name = args[0]
-                        val className = args[1]
+                        val name = this[0]
+                        val className = this[1]
                         val newValue = next()
                         if (finalValueMap.containsKey(name)) return@read false
 
                         val kotlinClass = kClassValueMap.getOrPut(className) { Class.forName(className).kotlin }
-
+                        println(newValue)
                         propertiesSetting(
-                            kotlinClass,
-                            className,
+                            kClass = kotlinClass,
+                            name = name,
                             newValue = newValue
                         )
                         return@read true
-                    }.lastReturnValue as Boolean
+                    }
                 }
             }
 
@@ -529,7 +611,7 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Boolean {
                     return args.read {
-                        val name = args[0]
+                        val name = this[0]
                         val classObj = next()
                         val newValue = next()
                         if (finalValueMap.containsKey(name)) return@read false
@@ -543,7 +625,7 @@ object JvmReflectionTemplate : Template {
                             newValue
                         )
                         return@read true
-                    }.lastReturnValue as Boolean
+                    }
                 }
             }
 
@@ -558,7 +640,7 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Any {
                     return args.read {
-                        val name = args[0]
+                        val name = this[0]
                         val parameter = list(1)
                         /* Function in object */
                         val obj = next()
@@ -587,15 +669,15 @@ object JvmReflectionTemplate : Template {
                                 parameter,
                                 obj,
                                 external
-                            )
+                            ) ?: NullObject
                         }
 
                         return@read functionRunOrNull(
                             function,
                             parameter,
                             obj
-                        )
-                    }.lastReturnValue
+                        ) ?: NullObject
+                    }
                 }
 
 
@@ -609,11 +691,13 @@ object JvmReflectionTemplate : Template {
 
                 override suspend fun execute(args: Parameter): Any {
                     return args.read {
-                        val name = args[0]
+                        val name = this[0]
                         val kotlinClass = kClassValueMap.getOrPut(name) { Class.forName(name).kotlin }
 
                         //try to build
-                        val constructorArg = list(2)
+                        val constructorArg = listOrNull(2) ?: kotlin.run {
+                            return@read kotlinClass.createInstance()
+                        }
                         val all = kotlinClass.constructors
                         var instanceAny: Any? = null
                         for (constructor in all) {
@@ -630,7 +714,7 @@ object JvmReflectionTemplate : Template {
                             throw ClassCastException("Cannot build ${kotlinClass.qualifiedName}")
                         }
                         return@read instanceAny
-                    }.lastReturnValue
+                    }
                 }
 
             }
