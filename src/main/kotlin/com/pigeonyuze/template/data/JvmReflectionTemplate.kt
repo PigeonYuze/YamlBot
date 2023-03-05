@@ -477,7 +477,7 @@ object JvmReflectionTemplate : Template {
                     val value = accessor.callSuspend(instance)
                     /* val -> KProperty */
                     /* var -> KMutableProperty(super: KProperty) */
-                    if (accessor !is KMutableProperty1<*, *> || accessor.isConst) {
+                    if ((accessor !is KMutableProperty1<*, *>) && accessor.property.isConst) {
                         finalValueMap[name] = value ?: NullObject
                     }
                     return value
