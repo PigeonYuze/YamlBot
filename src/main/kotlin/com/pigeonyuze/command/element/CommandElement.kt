@@ -196,6 +196,9 @@ enum class ImportType {
     },
     GROUP_ACTIVE {
         override fun getProjectClass(): Template = GroupActiveTemplate
+    },
+    REFLECTION {
+        override fun getProjectClass(): Template = JvmReflectionTemplate
     }
 
     ;

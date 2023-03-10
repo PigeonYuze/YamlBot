@@ -4,6 +4,7 @@ import net.mamoe.yamlkt.YamlElement
 import net.mamoe.yamlkt.YamlList
 import net.mamoe.yamlkt.YamlMap
 import net.mamoe.yamlkt.YamlPrimitive
+import kotlin.reflect.KClass
 
 
 inline fun <reified K, reified V> Map<*, *>.mapCast(): MutableMap<K, V> {
@@ -15,7 +16,7 @@ inline fun <reified K, reified V> Map<*, *>.mapCast(): MutableMap<K, V> {
     return map
 }
 
-fun String.listToStringDataToList(dropStart: Int = 1): List<String> {
+fun String.listToStringDataToList(dropStart: Int = 0): List<String> {
     val spiltAllComma: MutableList<String> =
         this.substring(dropStart, length - dropStart).replace(", ", ",").split(",".toRegex()).toMutableList() //拆分所有的','
     val spiltAllCommaTemp = mutableListOf<String>()  //contains '(' or ')' then add
@@ -128,7 +129,7 @@ fun YamlElement.toAnyOrNull() : Any? =
         }
         is YamlList -> {
             val anyList = mutableListOf<Any?>()
-            for (value in this.content){
+            for (value in this.content) {
                 anyList.add(value.toAnyOrNull())
             }
             anyList
@@ -136,6 +137,18 @@ fun YamlElement.toAnyOrNull() : Any? =
     }
 
 fun String.isLong() = this.toLongOrNull() != null
+
+fun String.isPackageName(): Boolean {
+    for (b in this) {
+        if (b == '.') continue
+        if (b.code in 0x61..0x7a) continue /* a ~ z */
+        if (b.code in 0x41..0x5a) continue /* A ~ Z */
+        return false
+    }
+    return true
+}
+
+val KClass<*>.isObject get() = this.objectInstance != null
 
 fun String.isBoolean() = this.toBooleanStrictOrNull() != null
 
