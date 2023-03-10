@@ -489,8 +489,6 @@ object JvmReflectionTemplate : Template {
                             " , ",
                         )
                     }"
-
-
                 private fun functionsSizeCheck(function: List<KFunction<*>>, name: String) {
                     if (function.filter {
                             it.annotations.filterIsInstance<JvmName>()
@@ -533,7 +531,7 @@ object JvmReflectionTemplate : Template {
 
             object KotlinRefectionProperty : KotlinReflection<Any> {
                 override val name: String
-                    get() = "fieldKotlin"
+                    get() = "propertyKotlin"
                 override val type: KClass<Any>
                     get() = Any::class
 
@@ -592,7 +590,7 @@ object JvmReflectionTemplate : Template {
                         if (finalValueMap.containsKey(name)) return@read false
 
                         val kotlinClass = kClassValueMap.getOrPut(className) { Class.forName(className).kotlin }
-                        println(newValue)
+
                         propertiesSetting(
                             kClass = kotlinClass,
                             name = name,
