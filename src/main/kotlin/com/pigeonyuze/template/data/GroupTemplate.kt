@@ -219,7 +219,7 @@ object GroupAnnouncementsTemplate : Template, Testable {
                             else -> canNotFind(next.toString(), "OAnnouncementParameters")
                         }
                     }
-                }.lastReturnValue
+                }
             }
         }
 
@@ -245,7 +245,7 @@ object GroupAnnouncementsTemplate : Template, Testable {
                             else -> canNotFind(next.toString(), "OnlineAnnouncement")
                         }
                     }
-                }.lastReturnValue
+                }
             }
         }
 
@@ -406,7 +406,7 @@ object GroupActiveTemplate : Template {
                             else -> canNotFind(next.toString(), "ActiveHonorList")
                         }
                     }
-                }.lastReturnValue
+                }
             }
         }
 
@@ -432,7 +432,7 @@ object GroupActiveTemplate : Template {
                             else -> canNotFind(type, "GroupActive")
                         }
                     }
-                }.lastReturnValue
+                }
             }
         }
 
@@ -456,7 +456,7 @@ object GroupActiveTemplate : Template {
                             else -> canNotFind(type, "SetGroupActiveValue")
                         }
                     }
-                }.lastReturnValue
+                }
             }
         }
 
@@ -488,7 +488,7 @@ object GroupActiveTemplate : Template {
                             }
                         }
                     }
-                }.lastReturnValue
+                }
             }
 
             private fun readImpl(
@@ -527,7 +527,7 @@ object GroupActiveTemplate : Template {
                             else -> canNotFind(type, "ActiveHonorInfo")
                         }
                     }
-                }.lastReturnValue
+                }
             }
         }
 
