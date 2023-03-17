@@ -1,0 +1,82 @@
+COMMAND: 
+  -
+    name: 
+      - '天气'
+    answeringMethod: QUOTE
+    answerContent: '您好，今天是%call-date%，%call-week%，今天%call-city%的天气如下：\n 天气：%call-type%,\n 气温：%call-high%，%call-low%。\n 风向%call-fengxiang%，风力%call-fengli%。\n Tip:%call-tip%'
+    run: 
+      - use: HTTP
+        call: content
+        args: 
+          - 'http://www.lpv4.cn:10000/api/weather/?city=%call-arg1%'
+        name: content
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - city
+        name: city
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - info
+          - date
+        name: date
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - info
+          - week
+        name: week
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - info
+          - type
+        name: type
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - info
+          - high
+        name: high
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - info
+          - low
+        name: low
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - info
+          - fengxiang
+        name: fengxiang
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - info
+          - fengli
+        name: fengli
+      - use: BASE
+        call: parseJson
+        args: 
+          - '%call-content%'
+          - info
+          - tip
+        name: tip
+    condition: []
+    argsSplit: ''
+    useLaterAddParams: true
+    laterAddParamsTimeoutSecond: 60
+    argsSize: 1
+    request: null
+    describe: null
+    isPrefixForAll: true
