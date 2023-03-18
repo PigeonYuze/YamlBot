@@ -2,6 +2,8 @@ package com.pigeonyuze.listener.impl
 
 import com.pigeonyuze.listener.EventParentScopeType
 import com.pigeonyuze.listener.YamlEventListener
+import com.pigeonyuze.listener.impl.data.BotEventListenerImpl
+import com.pigeonyuze.listener.impl.data.MessageEventListenerImpl
 import net.mamoe.mirai.event.GlobalEventChannel
 
 interface Listener {
@@ -10,7 +12,8 @@ interface Listener {
 
     companion object {
         private val listeners = listOf(
-            BotEventListenerImpl.BotListener
+            BotEventListenerImpl.BotListener,
+            MessageEventListenerImpl.MessageListener,
         )
 
         fun YamlEventListener.execute(name: String) {

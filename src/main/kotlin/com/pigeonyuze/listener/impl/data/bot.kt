@@ -1,8 +1,13 @@
 @file:OptIn(MiraiInternalApi::class)
 
-package com.pigeonyuze.listener.impl
+package com.pigeonyuze.listener.impl.data
 
 import com.pigeonyuze.command.element.NullObject
+import com.pigeonyuze.listener.impl.BaseListenerImpl
+import com.pigeonyuze.listener.impl.EventSubclassImpl
+import com.pigeonyuze.listener.impl.Listener
+import com.pigeonyuze.listener.impl.ListenerImpl
+import net.mamoe.mirai.event.AbstractEvent
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.utils.MiraiInternalApi
 import kotlin.reflect.KClass
@@ -19,12 +24,13 @@ Bot 头像改变: BotAvatarChangedEvent
 Bot 昵称改变: BotNickChangedEvent
 Bot 被戳: NudgeEvent
 */
-internal interface BotEventListenerImpl<K : BotEvent> {
+internal interface BotEventListenerImpl<K> where K : BotEvent, K : AbstractEvent {
     fun addBaseBotTemplate(event: K, template: MutableMap<String, Any>) {
         template["bot"] = event.bot
         template["botid"] = event.bot.id
         template["isIntercepted"] = event.isIntercepted
         template["it"] = event
+        template["isCancelled"] = event.isCancelled
     }
 
     companion object BotListener : Listener {
@@ -51,7 +57,6 @@ private class BotOnlineEventListener(template: MutableMap<String, Any>) :
 
     override fun addTemplateImpl(event: BotOnlineEvent) {
         addBaseBotTemplate(event, template)
-        template["isCancelled"] = event.isCancelled
     }
 }
 
@@ -124,7 +129,6 @@ private class BotOfflineEventListener(template: MutableMap<String, Any>) :
 
     override fun addTemplateImpl(event: BotOfflineEvent) {
         addBaseBotTemplate(event, template)
-        template["isCancelled"] = event.isCancelled
     }
 }
 
@@ -135,7 +139,6 @@ private class BotReloginEventListener(template: MutableMap<String, Any>) :
 
     override fun addTemplateImpl(event: BotReloginEvent) {
         addBaseBotTemplate(event, template)
-        template["isCancelled"] = event.isCancelled
         template["cause"] = event.cause ?: NullObject
     }
 }
@@ -147,7 +150,6 @@ private class BotAvatarChangedEventListener(template: MutableMap<String, Any>) :
 
     override fun addTemplateImpl(event: BotAvatarChangedEvent) {
         addBaseBotTemplate(event, template)
-        template["isCancelled"] = event.isCancelled
     }
 }
 
