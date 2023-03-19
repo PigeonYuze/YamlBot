@@ -2,8 +2,12 @@ package com.pigeonyuze.listener.impl
 
 import com.pigeonyuze.listener.EventParentScopeType
 import com.pigeonyuze.listener.YamlEventListener
+import com.pigeonyuze.listener.impl.ListenerImpl.Companion.addTemplate
 import com.pigeonyuze.listener.impl.data.BotEventListenerImpl
 import com.pigeonyuze.listener.impl.data.MessageEventListenerImpl
+import com.pigeonyuze.listener.impl.data.MessagePostSendEventListenerImpl
+import com.pigeonyuze.listener.impl.data.MessagePreSendEventListenerImpl
+import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.GlobalEventChannel
 
 interface Listener {
@@ -14,10 +18,13 @@ interface Listener {
         private val listeners = listOf(
             BotEventListenerImpl.BotListener,
             MessageEventListenerImpl.MessageListener,
+            MessagePreSendEventListenerImpl.MessagePreSendEventListener,
+            MessagePostSendEventListenerImpl.MessagePostSendEventListener
         )
 
         fun YamlEventListener.execute(name: String) {
-            var listenerObject: ListenerImpl<*>? = null
+            val yamlEventListener = this
+            var listenerObject: ListenerImpl<out Event>? = null
             listeners.forEach {
                 it.searchBuildListenerOrNull(name, this.template)?.also { obj ->
                     listenerObject = obj
@@ -31,19 +38,31 @@ interface Listener {
                 listenerObject!!.onceExecute(
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
-                    run = {},
+                    run = {
+                        addTemplate(it, yamlEventListener.template)
+                    },
                     priority = this.priority
                 )
+                return
             }
             if (objectBotId != 0L) {
                 listenerObject!!.filterExecute(
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
-                    run = {},
+                    run = {
+                        addTemplate(it, yamlEventListener.template)
+                    },
                     priority = this.priority
                 )
+                return
             }
-            TODO()
+            listenerObject!!.execute(
+                eventChannel = eventChannel,
+                priority = this.priority,
+                run = {
+                    addTemplate(it, yamlEventListener.template)
+                }
+            )
         }
     }
 }

@@ -2,6 +2,7 @@
 
 package com.pigeonyuze.listener.impl.data
 
+import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.listener.impl.BaseListenerImpl
 import com.pigeonyuze.listener.impl.Listener
 import com.pigeonyuze.listener.impl.ListenerImpl
@@ -42,7 +43,8 @@ import kotlin.reflect.KClass
 * */
 
 //-----------------------------------------------------------------------
-// The bot passively receives the message
+//The bot passively receives the message
+//region
 internal interface MessageEventListenerImpl<K> : BotEventListenerImpl<K> where K : AbstractEvent, K : MessageEvent {
     override fun addBaseBotTemplate(event: K, template: MutableMap<String, Any>) {
         super.addBaseBotTemplate(event, template)
@@ -144,6 +146,155 @@ private class OtherClientMessageEventListenerImpl(template: MutableMap<String, A
         template["platform"] = event.client.info.platform ?: Platform.MOBILE
     }
 }
+//endregion
 
+//-----------------------------------------------------------------------
+// The event before the bot actively sends the message
+//region
+internal interface MessagePreSendEventListenerImpl<K> :
+    BotEventListenerImpl<K> where K : MessagePreSendEvent/* MessagePreSendEvent extends AbstractEvent*/ {
+    override fun addBaseBotTemplate(event: K, template: MutableMap<String, Any>) {
+        super.addBaseBotTemplate(event, template)
+        template["message"] = event.message
+        template["target"] = event.target
+    }
 
+    companion object MessagePreSendEventListener : Listener {
+        override fun searchBuildListenerOrNull(name: String, template: MutableMap<String, Any>): ListenerImpl<*>? {
+            return when (name) {
+                "GroupMessagePreSendEvent" -> GroupMessagePreSendEventListenerImpl(template)
+                "FriendMessagePreSendEvent" -> FriendMessagePreSendEventListenerImpl(template)
+                "StrangerMessagePreSendEvent" -> StrangerMessagePreSendEventListenerImpl(template)
+                "GroupTempMessagePreSendEvent" -> GroupTempMessagePreSendEventListenerImpl(template)
+                else -> null
+            }
+        }
+    }
+}
 
+private class GroupMessagePreSendEventListenerImpl(template: MutableMap<String, Any>) :
+    MessagePreSendEventListenerImpl<GroupMessagePreSendEvent>, BaseListenerImpl<GroupMessagePreSendEvent>(template) {
+    override val eventClass: KClass<GroupMessagePreSendEvent>
+        get() = GroupMessagePreSendEvent::class
+
+    override fun addTemplateImpl(event: GroupMessagePreSendEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["group"] = event.target
+    }
+}
+
+private class FriendMessagePreSendEventListenerImpl(template: MutableMap<String, Any>) :
+    MessagePreSendEventListenerImpl<FriendMessagePreSendEvent>, BaseListenerImpl<FriendMessagePreSendEvent>(template) {
+    override val eventClass: KClass<FriendMessagePreSendEvent>
+        get() = FriendMessagePreSendEvent::class
+
+    override fun addTemplateImpl(event: FriendMessagePreSendEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["friend"] = event.target
+    }
+}
+
+private class StrangerMessagePreSendEventListenerImpl(template: MutableMap<String, Any>) :
+    MessagePreSendEventListenerImpl<StrangerMessagePreSendEvent>,
+    BaseListenerImpl<StrangerMessagePreSendEvent>(template) {
+    override val eventClass: KClass<StrangerMessagePreSendEvent>
+        get() = StrangerMessagePreSendEvent::class
+
+    override fun addTemplateImpl(event: StrangerMessagePreSendEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["stranger"] = event.target
+    }
+}
+
+private class GroupTempMessagePreSendEventListenerImpl(template: MutableMap<String, Any>) :
+    MessagePreSendEventListenerImpl<GroupTempMessagePreSendEvent>,
+    BaseListenerImpl<GroupTempMessagePreSendEvent>(template) {
+    override val eventClass: KClass<GroupTempMessagePreSendEvent>
+        get() = GroupTempMessagePreSendEvent::class
+
+    override fun addTemplateImpl(event: GroupTempMessagePreSendEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["group"] = event.group
+    }
+}
+
+//endregion
+
+//-----------------------------------------------------------------------
+// Events where the bot has already sent information (sending messages may fail)
+//region
+internal interface MessagePostSendEventListenerImpl<K> :
+    BotEventListenerImpl<K> where K : MessagePostSendEvent<*>/* MessagePostSendEvent extends AbstractEvent*/ {
+    override fun addBaseBotTemplate(event: K, template: MutableMap<String, Any>) {
+        super.addBaseBotTemplate(event, template)
+        template["message"] = event.message
+        template["target"] = event.target
+        template["isFailure"] = event.isFailure
+        template["isSuccess"] = event.isSuccess
+        template["result"] = event.result
+        template["source"] = event.source ?: NullObject
+        template["sourceResult"] = event.sourceResult
+        template["exception"] = event.exception ?: NullObject
+    }
+
+    companion object MessagePostSendEventListener : Listener {
+        override fun searchBuildListenerOrNull(name: String, template: MutableMap<String, Any>): ListenerImpl<*>? {
+            return when (name) {
+                "GroupMessagePostSendEvent" -> GroupMessagePostSendEventListenerImpl(template)
+                "FriendMessagePostSendEvent" -> FriendMessagePostSendEventListenerImpl(template)
+                "StrangerMessagePostSendEvent" -> StrangerMessagePostSendEventListenerImpl(template)
+                "GroupTempMessagePostSendEvent" -> GroupTempMessagePostSendEventListenerImpl(template)
+                else -> null
+            }
+        }
+    }
+}
+
+private class GroupMessagePostSendEventListenerImpl(template: MutableMap<String, Any>) :
+    MessagePostSendEventListenerImpl<GroupMessagePostSendEvent>, BaseListenerImpl<GroupMessagePostSendEvent>(template) {
+    override val eventClass: KClass<GroupMessagePostSendEvent>
+        get() = GroupMessagePostSendEvent::class
+
+    override fun addTemplateImpl(event: GroupMessagePostSendEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["group"] = event.target
+    }
+}
+
+private class FriendMessagePostSendEventListenerImpl(template: MutableMap<String, Any>) :
+    MessagePostSendEventListenerImpl<FriendMessagePostSendEvent>,
+    BaseListenerImpl<FriendMessagePostSendEvent>(template) {
+    override val eventClass: KClass<FriendMessagePostSendEvent>
+        get() = FriendMessagePostSendEvent::class
+
+    override fun addTemplateImpl(event: FriendMessagePostSendEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["friend"] = event.target
+    }
+}
+
+private class StrangerMessagePostSendEventListenerImpl(template: MutableMap<String, Any>) :
+    MessagePostSendEventListenerImpl<StrangerMessagePostSendEvent>,
+    BaseListenerImpl<StrangerMessagePostSendEvent>(template) {
+    override val eventClass: KClass<StrangerMessagePostSendEvent>
+        get() = StrangerMessagePostSendEvent::class
+
+    override fun addTemplateImpl(event: StrangerMessagePostSendEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["stranger"] = event.target
+    }
+}
+
+private class GroupTempMessagePostSendEventListenerImpl(template: MutableMap<String, Any>) :
+    MessagePostSendEventListenerImpl<GroupTempMessagePostSendEvent>,
+    BaseListenerImpl<GroupTempMessagePostSendEvent>(template) {
+    override val eventClass: KClass<GroupTempMessagePostSendEvent>
+        get() = GroupTempMessagePostSendEvent::class
+
+    override fun addTemplateImpl(event: GroupTempMessagePostSendEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["group"] = event.group
+    }
+}
+
+//endregion

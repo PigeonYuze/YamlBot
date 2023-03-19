@@ -14,34 +14,39 @@ import kotlin.reflect.KClass
  *
  * 内置有对 [YamlEventListener] 中的支持
  *
- * 使用 [addTemplate] 实现向预定模板添加内容
+ * 使用 [addTemplateImpl] 实现向预定模板添加内容
  *
- * 如果不需要添加模板可参照 [NoTemplateImpl] 或直接不调用 [addTemplate]
+ * 如果不需要添加模板可参照 [NoTemplateImpl] 或直接不调用 [addTemplateImpl]
  *
  * @see NoTemplateImpl
  * @see BaseListenerImpl
  * */
 interface ListenerImpl<K : Event> {
 
-    fun addTemplate(event: K, template: MutableMap<String, Any>)
+    /**
+     * 内部实现 向[template]提供参数
+     *
+     * @see addTemplate
+     * */
+    fun addTemplateImpl(event: K, template: MutableMap<String, Any>)
 
     fun execute(
         eventChannel: EventChannel<Event>,
-        run: () -> Unit,
+        run: ListenerImpl<K>.(Event) -> Unit,
         priority: EventPriority, /* = EventPriority.NORMAL */
     )
 
     fun filterExecute(
         filter: String,
         eventChannel: EventChannel<Event>,
-        run: () -> Unit,
+        run: ListenerImpl<K>.(Event) -> Unit,
         priority: EventPriority,/* = EventPriority.NORMAL */
     )
 
     fun onceExecute(
         filter: String = "",
         eventChannel: EventChannel<Event>,
-        run: () -> Unit,
+        run: ListenerImpl<K>.(Event) -> Unit,
         priority: EventPriority,
     )
 
@@ -59,7 +64,7 @@ interface ListenerImpl<K : Event> {
      * 不提供模板列表的 [addTemplateImpl]
      * */
     interface NoTemplateImpl<K : Event> : ListenerImpl<K> {
-        override fun addTemplate(event: K, template: MutableMap<String, Any>) {
+        override fun addTemplateImpl(event: K, template: MutableMap<String, Any>) {
             addTemplateImpl(event)
         }
 
@@ -67,6 +72,20 @@ interface ListenerImpl<K : Event> {
     }
 
     companion object {
+
+        @Suppress("UNCHECKED_CAST")
+                /* It may not good, but... */
+                /**
+                 * 避免泛型为`*`时 事件为[Nothing]从而无法提供事件的解决办法
+                 *
+                 * 从外部调用应优先考虑本函数
+                 *
+                 * 内部实现提供为 [addTemplateImpl]
+                 * */
+        fun <K : Event> ListenerImpl<K>.addTemplate(event: Event, template: MutableMap<String, Any>) {
+            addTemplateImpl(event as? K ?: return, template)
+        }
+
         const val equalExpression = "=="
         const val unequalExpression = "!="
         const val instanceOfExpression = "is"
@@ -193,7 +212,7 @@ interface ListenerImpl<K : Event> {
  *
  * **注意：**
  *
- * - 修改模板请直接修改 [template] 而不是 [addTemplate]
+ * - 修改模板请直接修改 [template] 而不是 [addTemplateImpl]
  * - 子类直接实现 [addTemplateImpl] 直接修改本类的 [template]
  *
  * 可参照以下代码
@@ -219,7 +238,7 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
     /**
      *  @suppress **注意** <br> 请不要在子类的 [addTemplateImpl] 中调用本函数，否则可能会造成栈溢出！
      * */
-    final override fun addTemplate(event: BaseEvent, template: MutableMap<String, Any>) {
+    final override fun addTemplateImpl(event: BaseEvent, template: MutableMap<String, Any>) {
         this.template = template
         addTemplateImpl(event)
     }
@@ -227,7 +246,7 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
     override fun onceExecute(
         filter: String,
         eventChannel: EventChannel<Event>,
-        run: () -> Unit,
+        run: ListenerImpl<BaseEvent>.(Event) -> Unit,
         priority: EventPriority,
     ) {
 
@@ -239,24 +258,28 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
             eventClass
         ) {
             if (runBoolean) {
-                run.invoke()
+                run.invoke(this@BaseListenerImpl, this)
             }
         }
     }
 
 
-    override fun execute(eventChannel: EventChannel<Event>, run: () -> Unit, priority: EventPriority) {
+    override fun execute(
+        eventChannel: EventChannel<Event>,
+        run: ListenerImpl<BaseEvent>.(Event) -> Unit,
+        priority: EventPriority,
+    ) {
         eventChannel.subscribeAlways(
             eventClass
         ) {
-            run.invoke()
+            run.invoke(this@BaseListenerImpl, this)
         }
     }
 
     override fun filterExecute(
         filter: String,
         eventChannel: EventChannel<Event>,
-        run: () -> Unit,
+        run: ListenerImpl<BaseEvent>.(Event) -> Unit,
         priority: EventPriority,
     ) {
         eventChannel.subscribeAlways(
@@ -265,7 +288,7 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
             if (ListenerImpl.evaluate(
                     filter, template
                 )
-            ) run.invoke()
+            ) run.invoke(this@BaseListenerImpl, this)
         }
     }
 }
