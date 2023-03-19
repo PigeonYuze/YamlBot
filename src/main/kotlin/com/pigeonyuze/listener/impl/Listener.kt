@@ -3,11 +3,9 @@ package com.pigeonyuze.listener.impl
 import com.pigeonyuze.listener.EventParentScopeType
 import com.pigeonyuze.listener.YamlEventListener
 import com.pigeonyuze.listener.impl.ListenerImpl.Companion.addTemplate
-import com.pigeonyuze.listener.impl.data.BotEventListenerImpl
-import com.pigeonyuze.listener.impl.data.MessageEventListenerImpl
-import com.pigeonyuze.listener.impl.data.MessagePostSendEventListenerImpl
-import com.pigeonyuze.listener.impl.data.MessagePreSendEventListenerImpl
+import com.pigeonyuze.listener.impl.data.*
 import net.mamoe.mirai.event.Event
+import net.mamoe.mirai.event.EventChannel
 import net.mamoe.mirai.event.GlobalEventChannel
 
 interface Listener {
@@ -19,23 +17,47 @@ interface Listener {
             BotEventListenerImpl.BotListener,
             MessageEventListenerImpl.MessageListener,
             MessagePreSendEventListenerImpl.MessagePreSendEventListener,
-            MessagePostSendEventListenerImpl.MessagePostSendEventListener
+            MessagePostSendEventListenerImpl.MessagePostSendEventListener,
+            MessageRecallEventListenerImpl.MessageRecallListener,
+            BeforeImageUploadEventListenerImpl.EventListener,
+            ImageUploadEventListenerImpl.EventListener,
         )
 
         fun YamlEventListener.execute(name: String) {
             val yamlEventListener = this
             var listenerObject: ListenerImpl<out Event>? = null
-            listeners.forEach {
-                it.searchBuildListenerOrNull(name, this.template)?.also { obj ->
+            for (it in listeners) {
+                val obj: ListenerImpl<out Event>? = it.searchBuildListenerOrNull(name, this.template)
+                if (obj != null) {
                     listenerObject = obj
+                    break
                 }
             }
 
             listenerObject
                 ?: throw NotImplementedError("Cannot find $name,This may be because it does not exist or the parameter is wrong")
+
             val eventChannel = GlobalEventChannel.parentScope(EventParentScopeType.parseEventScope(this.parentScope))
+            if (!this.readSubclassObjectName.contains("all")) {
+                if (listenerObject !is EventSubclassImpl<*>) {
+                    startListener(listenerObject, eventChannel, yamlEventListener)
+                    return
+                }
+                for (subclass in readSubclassObjectName) {
+                    listenerObject.findSubclass(subclass)
+                    startListener(listenerObject, eventChannel, yamlEventListener)
+                }
+            }
+
+        }
+
+        private fun YamlEventListener.startListener(
+            listenerObject: ListenerImpl<out Event>,
+            eventChannel: EventChannel<Event>,
+            yamlEventListener: YamlEventListener,
+        ) {
             if (isListenOnce) {
-                listenerObject!!.onceExecute(
+                listenerObject.onceExecute(
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
                     run = {
@@ -46,7 +68,7 @@ interface Listener {
                 return
             }
             if (objectBotId != 0L) {
-                listenerObject!!.filterExecute(
+                listenerObject.filterExecute(
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
                     run = {
@@ -56,7 +78,7 @@ interface Listener {
                 )
                 return
             }
-            listenerObject!!.execute(
+            listenerObject.execute(
                 eventChannel = eventChannel,
                 priority = this.priority,
                 run = {

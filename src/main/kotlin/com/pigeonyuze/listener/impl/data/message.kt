@@ -4,11 +4,15 @@ package com.pigeonyuze.listener.impl.data
 
 import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.listener.impl.BaseListenerImpl
+import com.pigeonyuze.listener.impl.EventSubclassImpl
 import com.pigeonyuze.listener.impl.Listener
 import com.pigeonyuze.listener.impl.ListenerImpl
 import net.mamoe.mirai.contact.Platform
 import net.mamoe.mirai.event.AbstractEvent
 import net.mamoe.mirai.event.events.*
+import net.mamoe.mirai.event.events.MessageRecallEvent.FriendRecall
+import net.mamoe.mirai.event.events.MessageRecallEvent.GroupRecall
+import net.mamoe.mirai.message.data.ids
 import net.mamoe.mirai.utils.MiraiInternalApi
 import java.util.*
 import kotlin.reflect.KClass
@@ -57,6 +61,7 @@ internal interface MessageEventListenerImpl<K> : BotEventListenerImpl<K> where K
         template["time"] = event.time
         template["date"] = Date(event.time * 100L)
         template["source"] = event.source
+        template["messageIds"] = event.message.ids
     }
 
     companion object MessageListener : Listener {
@@ -296,5 +301,149 @@ private class GroupTempMessagePostSendEventListenerImpl(template: MutableMap<Str
         template["group"] = event.group
     }
 }
+
+//endregion
+
+//-----------------------------------------------------------------------
+// The event Someone recalls a message
+//region
+internal interface MessageRecallEventListenerImpl<K : MessageRecallEvent> : BotEventListenerImpl<K> {
+    override fun addBaseBotTemplate(event: K, template: MutableMap<String, Any>) {
+        super.addBaseBotTemplate(event, template)
+        template["author"] = event.author
+        template["authorId"] = event.authorId
+        template["messageIds"] = event.messageIds
+        template["messageInternalIds"] = event.messageInternalIds
+        template["messageTime"] = event.messageTime
+        template["messageDate"] = Date(event.messageTime * 1000L)
+    }
+
+    companion object MessageRecallListener : Listener {
+        override fun searchBuildListenerOrNull(name: String, template: MutableMap<String, Any>): ListenerImpl<*>? {
+            return when (name) {
+                "FriendRecall" -> FriendRecallEventListenerImpl(template)
+                "GroupRecall" -> GroupRecallEventListenerImpl(template)
+                else -> null
+            }
+        }
+    }
+}
+
+private class FriendRecallEventListenerImpl(template: MutableMap<String, Any>) :
+    MessageRecallEventListenerImpl<FriendRecall>, BaseListenerImpl<FriendRecall>(template) {
+    override val eventClass: KClass<FriendRecall>
+        get() = FriendRecall::class
+
+    override fun addTemplateImpl(event: FriendRecall) {
+        super.addBaseBotTemplate(event, template)
+        template["operator"] = event.operator
+        template["operatorId"] = event.operatorId
+    }
+}
+
+private class GroupRecallEventListenerImpl(template: MutableMap<String, Any>) :
+    MessageRecallEventListenerImpl<GroupRecall>, BaseListenerImpl<GroupRecall>(template) {
+    override val eventClass: KClass<GroupRecall>
+        get() = GroupRecall::class
+
+    override fun addTemplateImpl(event: GroupRecall) {
+        super.addBaseBotTemplate(event, template)
+        template["group"] = event.group
+        template["groupId"] = event.group.id
+        template["operator"] = event.operatorOrBot
+        template["operatorId"] = event.operatorOrBot.id
+    }
+}
+
+//endregion
+
+//-----------------------------------------------------------------------
+// The event Before image upload
+//region
+internal class BeforeImageUploadEventListenerImpl(template: MutableMap<String, Any>) :
+    BaseListenerImpl<BeforeImageUploadEvent>(template), BotEventListenerImpl<BeforeImageUploadEvent> {
+
+    override val eventClass: KClass<BeforeImageUploadEvent>
+        get() = BeforeImageUploadEvent::class
+
+    override fun addTemplateImpl(event: BeforeImageUploadEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["target"] = event.target
+        template["source"] = event.source
+    }
+
+    companion object EventListener : Listener {
+        override fun searchBuildListenerOrNull(name: String, template: MutableMap<String, Any>): ListenerImpl<*>? {
+            return if (name == "BeforeImageUploadEvent") BeforeImageUploadEventListenerImpl(template) else null
+        }
+    }
+}
+//endregion
+
+//-----------------------------------------------------------------------
+// Image upload event(may fail)
+
+//  The original implementation of this class should use EventSubclassImpl,
+// but since there is no additional top layer here, interface is used
+//region
+internal interface ImageUploadEventListenerImpl : BotEventListenerImpl<ImageUploadEvent> {
+    override fun addBaseBotTemplate(event: ImageUploadEvent, template: MutableMap<String, Any>) {
+        super.addBaseBotTemplate(event, template)
+        template["target"] = event.target
+        template["source"] = event.source
+    }
+
+    companion object EventListener : Listener {
+        override fun searchBuildListenerOrNull(name: String, template: MutableMap<String, Any>): ListenerImpl<*>? {
+            return if (name == "ImageUploadEvent") ImageUploadEventListener(template) else null
+        }
+    }
+}
+
+private class ImageUploadEventListener(template: MutableMap<String, Any>) : ImageUploadEventListenerImpl,
+    BaseListenerImpl<ImageUploadEvent>(template), EventSubclassImpl<ImageUploadEvent> {
+
+    override val subclassList: List<ListenerImpl<out ImageUploadEvent>>
+        get() = listOf(Succeed(), Failed())
+
+    override fun findSubclass(name: String): ListenerImpl<out ImageUploadEvent> {
+        return when (name) {
+            "Succeed" -> subclassList[0]
+            "Failed" -> subclassList[1]
+            else -> throw IllegalArgumentException("Cannot find $name")
+        }
+    }
+
+    override val eventClass: KClass<ImageUploadEvent>
+        get() = ImageUploadEvent::class
+
+    inner class Succeed : ImageUploadEventListenerImpl,
+        BaseListenerImpl<ImageUploadEvent.Succeed>(template) {
+        override val eventClass: KClass<ImageUploadEvent.Succeed>
+            get() = ImageUploadEvent.Succeed::class
+
+        override fun addTemplateImpl(event: ImageUploadEvent.Succeed) {
+            super.addBaseBotTemplate(event, template)
+            template["image"] = event.image
+        }
+    }
+
+    inner class Failed : ImageUploadEventListenerImpl,
+        BaseListenerImpl<ImageUploadEvent.Failed>(template) {
+        override val eventClass: KClass<ImageUploadEvent.Failed>
+            get() = ImageUploadEvent.Failed::class
+
+        override fun addTemplateImpl(event: ImageUploadEvent.Failed) {
+            super.addBaseBotTemplate(event, template)
+            template["errno"] = event.errno
+            template["message"] = event.message
+        }
+    }
+
+    override fun addTemplateImpl(event: ImageUploadEvent) {
+        super.addBaseBotTemplate(event, template)
+    }
+}
+
 
 //endregion
