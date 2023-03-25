@@ -6,6 +6,7 @@ import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.EventChannel
 import net.mamoe.mirai.event.EventPriority
 import kotlin.reflect.KClass
+import net.mamoe.mirai.event.Listener as MiraiListener
 
 /**
  * ## 监听功能的实现
@@ -232,11 +233,25 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
     var template: MutableMap<String, Any>,
 ) : NoTemplateImpl<BaseEvent> {
 
+    /**
+     *  当启动监听时，此参数会被初始化为对应的监听器
+     *
+     *  **注意**
+     *
+     *  此属性被声明为是`lateinit`的，当调用监听函数([onceExecute],[execute],[filterExecute]) 时才会被初始化
+     *
+     *  在没有开始监听之前并不会初始化此属性
+     *
+     *  若在未初始化时调用会导致错误[UninitializedPropertyAccessException]
+     * */
+    lateinit var eventListener: MiraiListener<BaseEvent>
 
     abstract val eventClass: KClass<BaseEvent>
 
     /**
-     *  @suppress **注意** <br> 请不要在子类的 [addTemplateImpl] 中调用本函数，否则可能会造成栈溢出！
+     *  @suppress **注意**
+     *
+     *  请不要在子类的 [addTemplateImpl] 中调用本函数，否则可能会造成栈溢出！
      * */
     final override fun addTemplateImpl(event: BaseEvent, template: MutableMap<String, Any>) {
         this.template = template
@@ -254,7 +269,7 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
         if (filter.isNotEmpty()) {
             runBoolean = ListenerImpl.evaluate(filter, template)
         }
-        eventChannel.subscribeOnce(
+        eventListener = eventChannel.subscribeOnce(
             eventClass
         ) {
             if (runBoolean) {
@@ -269,7 +284,7 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
         run: ListenerImpl<BaseEvent>.(Event) -> Unit,
         priority: EventPriority,
     ) {
-        eventChannel.subscribeAlways(
+        eventListener = eventChannel.subscribeAlways(
             eventClass
         ) {
             run.invoke(this@BaseListenerImpl, this)
@@ -282,7 +297,7 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
         run: ListenerImpl<BaseEvent>.(Event) -> Unit,
         priority: EventPriority,
     ) {
-        eventChannel.subscribeAlways(
+        eventListener = eventChannel.subscribeAlways(
             eventClass
         ) {
             if (ListenerImpl.evaluate(

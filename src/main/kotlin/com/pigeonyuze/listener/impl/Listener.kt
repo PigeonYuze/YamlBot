@@ -21,6 +21,7 @@ interface Listener {
             MessageRecallEventListenerImpl.MessageRecallListener,
             BeforeImageUploadEventListenerImpl.EventListener,
             ImageUploadEventListenerImpl.EventListener,
+            GroupSettingChangeEventListenerImpl.EventListener,
         )
 
         fun YamlEventListener.execute(name: String) {
@@ -48,7 +49,7 @@ interface Listener {
                     startListener(listenerObject, eventChannel, yamlEventListener)
                 }
             }
-
+            startListener(listenerObject, eventChannel, yamlEventListener)
         }
 
         private fun YamlEventListener.startListener(
@@ -61,7 +62,7 @@ interface Listener {
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
                     run = {
-                        addTemplate(it, yamlEventListener.template)
+                        if (this@startListener.provideEventAllValue) addTemplate(it, yamlEventListener.template)
                     },
                     priority = this.priority
                 )
@@ -72,7 +73,7 @@ interface Listener {
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
                     run = {
-                        addTemplate(it, yamlEventListener.template)
+                        if (this@startListener.provideEventAllValue) addTemplate(it, yamlEventListener.template)
                     },
                     priority = this.priority
                 )
@@ -82,7 +83,7 @@ interface Listener {
                 eventChannel = eventChannel,
                 priority = this.priority,
                 run = {
-                    addTemplate(it, yamlEventListener.template)
+                    if (this@startListener.provideEventAllValue) addTemplate(it, yamlEventListener.template)
                 }
             )
         }
