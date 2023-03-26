@@ -23,6 +23,7 @@ interface Listener {
             ImageUploadEventListenerImpl.EventListener,
             GroupSettingChangeEventListenerImpl.EventListener,
             GroupMemberInfoEventsListenerImpl.EventListener,
+            GroupEventsAboutBotListenerImpl.EventListener
         )
 
         fun YamlEventListener.execute(name: String) {
