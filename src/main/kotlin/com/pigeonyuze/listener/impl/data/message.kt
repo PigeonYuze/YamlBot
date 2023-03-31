@@ -1,4 +1,5 @@
 @file:OptIn(MiraiInternalApi::class)
+@file:JvmName("MessageEventsImplKt")
 
 package com.pigeonyuze.listener.impl.data
 

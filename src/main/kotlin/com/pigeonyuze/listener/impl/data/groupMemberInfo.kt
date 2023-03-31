@@ -1,4 +1,5 @@
 @file:OptIn(MiraiExperimentalApi::class)
+@file:JvmName("GroupMemberInfoImplEventsKt")
 
 package com.pigeonyuze.listener.impl.data
 

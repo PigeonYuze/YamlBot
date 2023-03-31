@@ -5,6 +5,8 @@ import com.pigeonyuze.listener.impl.ListenerImpl.NoTemplateImpl
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.EventChannel
 import net.mamoe.mirai.event.EventPriority
+import javax.script.Invocable
+import javax.script.ScriptEngineManager
 import kotlin.reflect.KClass
 import net.mamoe.mirai.event.Listener as MiraiListener
 
@@ -91,6 +93,20 @@ interface ListenerImpl<K : Event> {
         const val unequalExpression = "!="
         const val instanceOfExpression = "is"
 
+        private fun jsEvaluate(expression: String): Boolean {
+            val manager = ScriptEngineManager()
+            val jsInstance = manager.getEngineByName("JavaScript")
+            jsInstance.eval(
+                """
+                function callByEvaluate_TempFunction() {
+                    return $expression;
+                }
+            """.trimIndent()
+            )
+            val invocable = jsInstance as Invocable
+            return invocable.invokeFunction("callByEvaluate_TempFunction").toString() == "true"
+        }
+
         fun evaluate(expression: String, template: MutableMap<String, Any>): Boolean {
             var result = false
             var leftOperand = false
@@ -99,6 +115,10 @@ interface ListenerImpl<K : Event> {
             var expressionKind: EvaluateTokenKind? = null
 
             for (token in expression.split(' ')) {
+                if (token.startsWith("%js:") && token.endsWith("%")) {
+                    val value = jsEvaluate(token.removePrefix("%js:").removeSuffix("%"))
+                    leftOperand = value
+                }
                 when (token) {
                     "!" -> leftOperand = !leftOperand
                     "true" -> {

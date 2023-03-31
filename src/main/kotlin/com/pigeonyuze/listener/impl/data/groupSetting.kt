@@ -1,3 +1,5 @@
+@file:JvmName("GroupSettingEventsImplKt")
+
 package com.pigeonyuze.listener.impl.data
 
 import com.pigeonyuze.com.pigeonyuze.LoggerManager
