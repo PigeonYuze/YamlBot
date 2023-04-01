@@ -201,10 +201,9 @@ class Parameter constructor() {
         } else value.add(oldValue)
     }
 
-    suspend fun <T> read(run: suspend ParameterValueReader.() -> T): ParameterValueReader {
+    suspend fun <T> read(run: suspend ParameterValueReader.() -> T): T {
         val reader = ParameterValueReader()
-        run.invoke(reader)
-        return reader
+        return run.invoke(reader)
     }
 
 
@@ -243,7 +242,10 @@ class Parameter constructor() {
     inner class ParameterValueReader {
         private val value: List<Any> = this@Parameter.value
 
-        lateinit var lastReturnValue: Any
+        operator fun get(index: Int): String {
+            readIndex = index
+            return value[index].toString()
+        }
 
         var readIndex: Int = -1
 
@@ -252,19 +254,19 @@ class Parameter constructor() {
         fun hasNext() = nonNegativeIndex < value.lastIndex
 
         @DslParameterReader
-        suspend infix fun Int.read(run: suspend Any.() -> Any) {
+        suspend infix fun <K> Int.read(run: suspend Any.() -> K): K {
             this@ParameterValueReader.readIndex = this
 
-            lastReturnValue = run(this@ParameterValueReader.value[readIndex])
+            return run(this@ParameterValueReader.value[readIndex])
         }
 
         @DslParameterReader
-        infix fun Int.long(run: Long.() -> Any) {
+        infix fun <K> Int.long(run: Long.() -> K): K {
             this@ParameterValueReader.readIndex = this
 
             val runValue = if (value[this] is Long) value[this] as Long
             else _stringValue[this].toLongOrNull() ?: errorType(this)
-            lastReturnValue = run.invoke(runValue)
+            return run.invoke(runValue)
         }
 
         fun long(index: Int = nonNegativeIndex): Long {
@@ -282,17 +284,17 @@ class Parameter constructor() {
         }
 
         @DslParameterReader
-        infix fun Int.int(run: Int.() -> Any) {
+        infix fun <K> Int.int(run: Int.() -> K): K {
             this@ParameterValueReader.readIndex = this
-            lastReturnValue = run(
+            return run(
                 _stringValue[this].toIntOrNull() ?: errorType(this)
             )
         }
 
         @DslParameterReader
-        infix fun Int.boolean(run: Boolean.() -> Any) {
+        infix fun <K> Int.boolean(run: Boolean.() -> K): K {
             this@ParameterValueReader.readIndex = this
-            lastReturnValue = run(
+            return run(
                 _stringValue[this].toBooleanStrictOrNull() ?: errorType(this)
             )
         }
@@ -303,10 +305,10 @@ class Parameter constructor() {
         }
 
         @DslParameterReader
-        infix fun Int.map(run: Map<String, String>.() -> Any) {
+        infix fun <K> Int.map(run: Map<String, String>.() -> K): K {
             this@ParameterValueReader.readIndex = this
             val value = value[this]
-            lastReturnValue = run(
+            return run(
                 when (value) {
                     is Map<*, *> -> value.stringMap()
                     is String -> value.keyAndValueStringDataToMap()
@@ -325,20 +327,20 @@ class Parameter constructor() {
         }
 
         @DslParameterReader
-        infix fun Int.message(run: Message.() -> Any) {
+        infix fun <K> Int.message(run: Message.() -> K): K {
             this@ParameterValueReader.readIndex = this
             val value = value[this]
-            lastReturnValue = run.invoke(
+            return run.invoke(
                 if (value is Message) value
                 else errorType(this)
             )
         }
 
         @DslParameterReader
-        infix fun Int.list(run: List<String>.() -> Any) {
+        infix fun <K> Int.list(run: List<String>.() -> K): K {
             this@ParameterValueReader.readIndex = this
             val value = value[this]
-            lastReturnValue = run.invoke(
+            return run.invoke(
                 when (value) {
                     is List<*> -> value.stringList()
                     is String -> value.listToStringDataToList()
@@ -356,11 +358,18 @@ class Parameter constructor() {
             }
         }
 
+        fun listOrNull(index: Int = readIndex): List<*>? {
+            if (index > value.lastIndex) {
+                return null
+            }
+            return list(index)
+        }
+
         @DslParameterReader
-        infix fun Int.messageEvent(run: MessageEvent.() -> Any) {
+        infix fun <K> Int.messageEvent(run: MessageEvent.() -> K): K {
             this@ParameterValueReader.readIndex = this
             val value = value[this]
-            lastReturnValue = run.invoke(
+            return run.invoke(
                 if (value is MessageEvent) value
                 else errorType(this)
             )
@@ -378,7 +387,17 @@ class Parameter constructor() {
 
         fun next(): Any {
             readIndex++
+
             return value[readIndex]
+        }
+
+        fun nextOrNull(): Any? {
+            readIndex++
+            return value.getOrNull(readIndex)
+        }
+
+        override fun toString(): String {
+            return "ParameterValueReader($value, readIndex=$readIndex)"
         }
     }
 

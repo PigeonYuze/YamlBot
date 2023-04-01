@@ -265,7 +265,7 @@ object BaseTemplate : Template {
                     0 read {
                         this === next()
                     }
-                }.lastReturnValue as? Boolean ?: false
+                }
             }
         }
 
@@ -295,7 +295,7 @@ object BaseTemplate : Template {
                             obj1.compareTo(obj2)
                         }
                     }
-                }.lastReturnValue as Int
+                }
             }
         }
 

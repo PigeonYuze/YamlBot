@@ -241,7 +241,7 @@ sealed interface Command {
     }
 
     @Serializable
-    data class ArgCommand(
+    data class ArgCommand @JvmOverloads constructor(
         override val name: List<String>,
         override val answeringMethod: AnsweringMethod,
         override val answerContent: String,
@@ -253,6 +253,7 @@ sealed interface Command {
         private val argsSize: Int,
         private val request: Map<Int, Type>? = null,
         private val describe: Map<Int, String>? = null,
+        private val isPrefixForAll: Boolean = true,
     ) : Command {
 
         @Transient
@@ -403,12 +404,19 @@ sealed interface Command {
             LoggerManager.loggingDebug("ArgCommand-run", "Start get args from native message..")
 
             for (commandName in name) {
-                if (msg.startsWith(commandName)) {
-                    msg = msg.replace(commandName, "") //get only value command
-                }
+                msg = checkCommandName(msg, commandName) {
+                    msg.replace(commandName, "")//get only value command
+                } ?: continue
             }
 
-            val args = msg.split(argsSplit).asParameter().removeFirst()//get elements
+
+            LoggerManager.loggingTrace("ArgCommand-run", "Pure parameter part: $msg")
+
+            val args = /* Get values from native message*/
+                if (argsSplit.isEmpty() && argsSize == 1) {
+                    println("IT IS CAN BE NATIVE MSG")
+                    msg.asParameter()
+                } else msg.split(argsSplit).asParameter().removeFirst()
 
             LoggerManager.loggingDebug("ArgCommand-run", "Args from native message: $args")
 
@@ -503,11 +511,32 @@ sealed interface Command {
             }
         }
 
+        /**
+         * 由 [isPrefixForAll] 自动检测名称是否符合要求
+         *
+         * 如果符合要求执行 [run] 并返回 [run] 的内容
+         *
+         * 反之则返回`null`
+         * */
+        private inline fun <K> checkCommandName(checkNativeObj: String, shouldBe: String, run: () -> K): K? {
+            if (isPrefixForAll) {
+                if (checkNativeObj.startsWith(shouldBe)) {
+                    return run.invoke()
+                }
+                return null
+            }
+            if (checkNativeObj.endsWith(shouldBe)) { //its suffix
+                return run.invoke()
+            }
+            return null
+        }
+
         override fun isThis(commandMessage: String): Boolean {
             for (commandName in name) {
-                if (commandMessage.startsWith(commandName)) {
-                    return true
-                }
+                checkCommandName(commandMessage, commandName) {
+                    return@checkCommandName true
+                } ?: continue
+                return true
             }
             return false
         }

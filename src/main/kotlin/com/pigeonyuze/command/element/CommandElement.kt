@@ -202,7 +202,6 @@ enum class ImportType {
     GROUP_ACTIVE {
         override fun getProjectClass(): Template = GroupActiveTemplate
     },
-
     /**
      * @see EventTemplate
      * */
@@ -213,6 +212,9 @@ enum class ImportType {
     },
     MESSAGE_MANAGER {
         override fun getProjectClass(): Template = MessageManagerTemplate
+    },
+    REFLECTION {
+        override fun getProjectClass(): Template = JvmReflectionTemplate
     }
 
     ;

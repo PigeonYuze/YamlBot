@@ -33,6 +33,7 @@ object YamlBot : KotlinPlugin(
             commandList.add(command.value)
         }
 
+
         val parentScope = GlobalEventChannel.parentScope(this)
 
         parentScope.subscribeAlways<MessageEvent> {
@@ -101,5 +102,4 @@ object BotsTool {
         }
         return groups
     }
-
 }

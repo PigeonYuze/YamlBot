@@ -180,3 +180,34 @@ request:
 > `$laterAddParamsTimeoutSecond`秒后未响应则自动停止
 
 ---
+
+### IsPrefixForAll 可选参数
+
+选择`name`的类型为指令前缀或指令后缀。 **默认为`true`**
+
+如果为`true`则`name`都会判断为指令的前缀，反之为`false`则`name`都会判断为指令后缀
+
+举个例子，如果`name`设置为:
+
+```yaml
+name:
+  - '天气'
+  - 'weather'
+```
+
+当`isPrefixForAll`设置为`true`时，会有以下效果
+> 信息： 上海天气 **无响应**
+>
+> 信息： 天气上海 **有响应**
+>
+> 信息： weather Shanghai **有响应**
+
+如果为`false`时，则为以下效果
+
+> 信息： 上海天气 **有响应**
+>
+> 信息： 天气上海 **无响应**
+>
+> 信息： Shanghai weather **有响应**
+
+*以上效果仅供效果，实际还需要修改其他设置以达到该效果*
