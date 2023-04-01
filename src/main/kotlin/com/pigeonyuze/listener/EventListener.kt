@@ -30,10 +30,11 @@ data class EventListener(
     val objectBotId: Long = 0L,
     val filter: String = "true",
     val provideEventAllValue: Boolean = true,
-    val priority: EventPriority,
+    val priority: EventPriority = EventPriority.NORMAL,
     val readSubclassObjectName: List<String> = listOf("all"),
-    val parentScope: String = "PLUGIN_JOB",
+    val parentScope: String = "PLUGIN_SCOPE",
     val isListenOnce: Boolean = false,
+    @kotlinx.serialization.Transient // 序列化时采取另外一种拼接方法
     val run: List<TemplateYML> = listOf(),
 ) {
 

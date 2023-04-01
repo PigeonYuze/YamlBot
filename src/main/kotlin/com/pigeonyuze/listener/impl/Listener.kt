@@ -28,7 +28,7 @@ interface Listener {
             FriendEventsListenerImpl.EventListener
         )
 
-        suspend fun EventListener.execute(name: String) {
+        suspend fun EventListener.execute(name: String = this.type) {
             val yamlEventListener = this
             var listenerObject: ListenerImpl<out Event>? = null
             for (it in listeners) {

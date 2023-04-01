@@ -52,8 +52,8 @@ sealed interface EventParentScopeType : CoroutineScope {
     companion object {
         fun parseEventScope(setting: String) =
             when (setting) {
-                "PLUGIN_SCOPE" -> PluginScope
-                "NEW_SCOPE_FROM_PLUGIN" -> NewScopeFromPlugin()
+                "PLUGIN_SCOPE", "PLUGIN_JOB", "NORMAL" -> PluginScope
+                "NEW_SCOPE_FROM_PLUGIN", "NEW_JOB_FROM_PLUGIN" -> NewScopeFromPlugin()
                 else -> if (setting.startsWith("USE_SCOPE")) {
                     val name = setting.drop(10).dropLast(1)
                     UseEitherScope(name)
