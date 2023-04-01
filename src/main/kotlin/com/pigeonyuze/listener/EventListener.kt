@@ -34,7 +34,6 @@ data class EventListener(
     val readSubclassObjectName: List<String> = listOf("all"),
     val parentScope: String = "PLUGIN_SCOPE",
     val isListenOnce: Boolean = false,
-    @kotlinx.serialization.Transient // 序列化时采取另外一种拼接方法
     val run: List<TemplateYML> = listOf(),
 ) {
 

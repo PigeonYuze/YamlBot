@@ -170,6 +170,10 @@ open class TemplateYML private constructor() {
         this.parameter = args
         //endregion
     }
+
+    override fun toString(): String {
+        return "TemplateYML(use=$use, call='$call', parameter=$parameter, args=$args, name='$name')"
+    }
 }
 
 @Serializable
@@ -206,6 +210,9 @@ enum class ImportType {
         override fun getProjectClass(): Template {
             throw NotImplementedError()
         }
+    },
+    MESSAGE_MANAGER {
+        override fun getProjectClass(): Template = MessageManagerTemplate
     }
 
     ;

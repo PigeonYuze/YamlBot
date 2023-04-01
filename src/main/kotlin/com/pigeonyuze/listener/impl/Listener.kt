@@ -5,6 +5,7 @@ import com.pigeonyuze.listener.EventListener
 import com.pigeonyuze.listener.EventParentScopeType
 import com.pigeonyuze.listener.impl.ListenerImpl.Companion.addTemplate
 import com.pigeonyuze.listener.impl.data.*
+import com.pigeonyuze.util.mapCast
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.EventChannel
 import net.mamoe.mirai.event.GlobalEventChannel
@@ -66,8 +67,13 @@ interface Listener {
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
                     run = {
-                        if (this@startListener.provideEventAllValue) addTemplate(it, eventListener.template)
-                        executeRun(listenerObject, eventListener)
+                        executeRun(
+                            listenerObject,
+                            if (this@startListener.provideEventAllValue) addTemplate(
+                                it,
+                                eventListener.template
+                            ) else mutableMapOf()
+                        )
                     },
                     priority = this.priority
                 )
@@ -78,8 +84,13 @@ interface Listener {
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
                     run = {
-                        if (this@startListener.provideEventAllValue) addTemplate(it, eventListener.template)
-                        executeRun(listenerObject, eventListener)
+                        executeRun(
+                            listenerObject,
+                            if (this@startListener.provideEventAllValue) addTemplate(
+                                it,
+                                eventListener.template
+                            ) else mutableMapOf()
+                        )
                     },
                     priority = this.priority
                 )
@@ -90,21 +101,33 @@ interface Listener {
                 priority = this.priority,
                 run = {
                     if (this@startListener.provideEventAllValue) addTemplate(it, eventListener.template)
-                    executeRun(listenerObject, eventListener)
+                    executeRun(
+                        listenerObject,
+                        if (this@startListener.provideEventAllValue) addTemplate(
+                            it,
+                            eventListener.template
+                        ) else mutableMapOf()
+                    )
                 }
             )
         }
 
         private suspend inline fun EventListener.executeRun(
             listenerObject: ListenerImpl<out Event>,
-            eventListener: EventListener,
+            values: MutableMap<String, Any>,
         ) {
             for (templateYML in run) {
                 if (templateYML.use == ImportType.EVENT) {
-                    val template = listenerObject.eventTemplate.findOrNull(templateYML.name)
-                        ?: throw IllegalArgumentException("Cannot find function ${templateYML.name}")
+                    val template = listenerObject.eventTemplate.findOrNull(templateYML.call)
+                        ?: throw IllegalArgumentException("Cannot find function ${templateYML.call}")
                     val value = template.execute(templateYML.parameter)
-                    eventListener.template[templateYML.name] = value
+                    values[templateYML.name] = value
+                } else {
+                    val args = templateYML.parameter.parseElement(values.mapCast())
+                    values[templateYML.name] = templateYML.use.getProjectClass().callValue(
+                        templateYML.call,
+                        args
+                    )
                 }
             }
         }

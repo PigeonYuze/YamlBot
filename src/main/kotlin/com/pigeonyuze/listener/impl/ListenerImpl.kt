@@ -35,7 +35,7 @@ interface ListenerImpl<K : Event> {
      *
      * @see addTemplate
      * */
-    fun addTemplateImpl(event: K, template: MutableMap<String, Any>)
+    fun addTemplateImpl(event: K, template: MutableMap<String, Any>): MutableMap<String, Any>
 
     /**
      * 事件的支持的模板
@@ -82,8 +82,9 @@ interface ListenerImpl<K : Event> {
      * 不提供模板列表的 [addTemplateImpl]
      * */
     interface NoTemplateImpl<K : Event> : ListenerImpl<K> {
-        override fun addTemplateImpl(event: K, template: MutableMap<String, Any>) {
+        override fun addTemplateImpl(event: K, template: MutableMap<String, Any>): MutableMap<String, Any> {
             addTemplateImpl(event)
+            throw NotImplementedError()
         }
 
         fun addTemplateImpl(event: K)
@@ -100,8 +101,11 @@ interface ListenerImpl<K : Event> {
                  *
                  * 内部实现提供为 [addTemplateImpl]
                  * */
-        fun <K : Event> ListenerImpl<K>.addTemplate(event: Event, template: MutableMap<String, Any>) {
-            addTemplateImpl(event as? K ?: return, template)
+        fun <K : Event> ListenerImpl<K>.addTemplate(
+            event: Event,
+            template: MutableMap<String, Any>,
+        ): MutableMap<String, Any> {
+            return addTemplateImpl(event as? K ?: return template, template)
         }
 
         const val equalExpression = "=="
@@ -302,9 +306,10 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
      *
      *  请不要在子类的 [addTemplateImpl] 中调用本函数，否则可能会造成栈溢出！
      * */
-    final override fun addTemplateImpl(event: BaseEvent, template: MutableMap<String, Any>) {
+    final override fun addTemplateImpl(event: BaseEvent, template: MutableMap<String, Any>): MutableMap<String, Any> {
         this.template = template
         addTemplateImpl(event)
+        return template
     }
 
     override fun onceExecute(

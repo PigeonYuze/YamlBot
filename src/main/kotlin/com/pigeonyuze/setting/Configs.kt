@@ -13,6 +13,7 @@ import com.pigeonyuze.listener.EventListener
 import com.pigeonyuze.listener.YamlEventListenerDecoder
 import com.pigeonyuze.listener.YamlEventListenerDecoder.load
 import com.pigeonyuze.listener.impl.Listener.Companion.execute
+import com.pigeonyuze.template.parameterOf
 import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.ValueDescription
@@ -156,7 +157,15 @@ object ListenerConfigs : AutoSavePluginConfig(YamlEventListenerDecoder.saveName)
         listOf(
             //example
             EventListener(
-                type = "GroupMessageEvent"
+                type = "MemberJoinEvent",
+                run = listOf(
+                    TemplateYML(
+                        ImportType.MESSAGE_MANAGER,
+                        "sendMessageToGroup",
+                        parameterOf("%call-group%", "欢迎新人！"),
+                        "only_run"
+                    )
+                )
             )
         )
     )

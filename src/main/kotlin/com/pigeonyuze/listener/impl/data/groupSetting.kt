@@ -58,7 +58,7 @@ private class GroupNameChangeEventListener(template: MutableMap<String, Any>) :
     }
 }
 
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION_ERROR")
 // @DeprecatedSinceMirai(warningSince = "2.12")
 private class GroupEntranceAnnouncementChangeEventListener(template: MutableMap<String, Any>) :
     GroupSettingChangeEventListenerImpl<GroupEntranceAnnouncementChangeEvent, String>,

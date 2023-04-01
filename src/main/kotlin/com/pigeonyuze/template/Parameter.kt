@@ -116,11 +116,14 @@ class Parameter constructor() {
 
     fun subArgs(fromIndex: Int, toIndex: Int = value.lastIndex) = Parameter(value.subList(fromIndex, toIndex))
     fun random() = this[(0..size).random()]
-    fun errorType(index: Int): Nothing = illegalArgument("Error parameter type in $index")
+    fun errorType(index: Int): Nothing = illegalArgument("Error parameter type in $index of Parameter$this")
     fun parseElement(templateCall: MutableMap<String, Any?>): Parameter { //不对本值进行任何修改，具有唯一性
         val ret = Parameter()
         for (arg in _stringValue) {
-            val data = if (arg.contains("%call-")) parseData(arg, templateCall) else arg
+            val data = if (arg.contains("%call-")) parseData(
+                arg,
+                templateCall
+            ) else arg
             ret.value.add(data)
             ret._stringValue.add(data)
         }
@@ -244,7 +247,9 @@ class Parameter constructor() {
 
         var readIndex: Int = -1
 
-        fun hasNext() = readIndex < value.lastIndex
+        val nonNegativeIndex = if (readIndex < 0) 0 else readIndex
+
+        fun hasNext() = nonNegativeIndex < value.lastIndex
 
         @DslParameterReader
         suspend infix fun Int.read(run: suspend Any.() -> Any) {
@@ -260,6 +265,20 @@ class Parameter constructor() {
             val runValue = if (value[this] is Long) value[this] as Long
             else _stringValue[this].toLongOrNull() ?: errorType(this)
             lastReturnValue = run.invoke(runValue)
+        }
+
+        fun long(index: Int = nonNegativeIndex): Long {
+            this@ParameterValueReader.readIndex = index
+
+            return if (value[index] is Long) value[index] as Long
+            else _stringValue[index].toLongOrNull() ?: errorType(index)
+        }
+
+        infix fun longOrNull(index: Int): Long? {
+            this@ParameterValueReader.readIndex = index
+
+            return if (value[index] is Long) value[index] as Long
+            else _stringValue[index].toLongOrNull()
         }
 
         @DslParameterReader
@@ -296,7 +315,7 @@ class Parameter constructor() {
             )
         }
 
-        fun map(index: Int = readIndex): Map<out Any?, Any?> {
+        fun map(index: Int = nonNegativeIndex): Map<out Any?, Any?> {
             this@ParameterValueReader.readIndex = index
             return when (val value = value[index]) {
                 is Map<*, *> -> value
@@ -328,7 +347,7 @@ class Parameter constructor() {
             )
         }
 
-        fun list(index: Int = readIndex): List<*> {
+        fun list(index: Int = nonNegativeIndex): List<*> {
             this@ParameterValueReader.readIndex = index
             return when (val value = value[index]) {
                 is List<*> -> value
@@ -352,7 +371,7 @@ class Parameter constructor() {
             return _stringValue[index].toIntOrNull() ?: errorType(index)
         }
 
-        fun intOrNull(index: Int = readIndex): Int? {
+        fun intOrNull(index: Int = nonNegativeIndex): Int? {
             this@ParameterValueReader.readIndex = index
             return _stringValue[index].toIntOrNull()
         }
