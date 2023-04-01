@@ -2,7 +2,7 @@
 
 package com.pigeonyuze.listener.impl.data
 
-import com.pigeonyuze.com.pigeonyuze.LoggerManager
+import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.listener.impl.BaseListenerImpl
 import com.pigeonyuze.listener.impl.Listener
 import com.pigeonyuze.listener.impl.ListenerImpl

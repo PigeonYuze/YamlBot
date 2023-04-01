@@ -1,7 +1,8 @@
 package com.pigeonyuze.listener.impl
 
+import com.pigeonyuze.command.element.ImportType
+import com.pigeonyuze.listener.EventListener
 import com.pigeonyuze.listener.EventParentScopeType
-import com.pigeonyuze.listener.YamlEventListener
 import com.pigeonyuze.listener.impl.ListenerImpl.Companion.addTemplate
 import com.pigeonyuze.listener.impl.data.*
 import net.mamoe.mirai.event.Event
@@ -27,7 +28,7 @@ interface Listener {
             FriendEventsListenerImpl.EventListener
         )
 
-        fun YamlEventListener.execute(name: String) {
+        suspend fun EventListener.execute(name: String) {
             val yamlEventListener = this
             var listenerObject: ListenerImpl<out Event>? = null
             for (it in listeners) {
@@ -55,17 +56,18 @@ interface Listener {
             startListener(listenerObject, eventChannel, yamlEventListener)
         }
 
-        private fun YamlEventListener.startListener(
+        private suspend fun EventListener.startListener(
             listenerObject: ListenerImpl<out Event>,
             eventChannel: EventChannel<Event>,
-            yamlEventListener: YamlEventListener,
+            eventListener: EventListener,
         ) {
             if (isListenOnce) {
                 listenerObject.onceExecute(
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
                     run = {
-                        if (this@startListener.provideEventAllValue) addTemplate(it, yamlEventListener.template)
+                        if (this@startListener.provideEventAllValue) addTemplate(it, eventListener.template)
+                        executeRun(listenerObject, eventListener)
                     },
                     priority = this.priority
                 )
@@ -76,7 +78,8 @@ interface Listener {
                     eventChannel = eventChannel,
                     filter = botIdToFilter(),
                     run = {
-                        if (this@startListener.provideEventAllValue) addTemplate(it, yamlEventListener.template)
+                        if (this@startListener.provideEventAllValue) addTemplate(it, eventListener.template)
+                        executeRun(listenerObject, eventListener)
                     },
                     priority = this.priority
                 )
@@ -86,9 +89,24 @@ interface Listener {
                 eventChannel = eventChannel,
                 priority = this.priority,
                 run = {
-                    if (this@startListener.provideEventAllValue) addTemplate(it, yamlEventListener.template)
+                    if (this@startListener.provideEventAllValue) addTemplate(it, eventListener.template)
+                    executeRun(listenerObject, eventListener)
                 }
             )
+        }
+
+        private suspend inline fun EventListener.executeRun(
+            listenerObject: ListenerImpl<out Event>,
+            eventListener: EventListener,
+        ) {
+            for (templateYML in run) {
+                if (templateYML.use == ImportType.EVENT) {
+                    val template = listenerObject.eventTemplate.findOrNull(templateYML.name)
+                        ?: throw IllegalArgumentException("Cannot find function ${templateYML.name}")
+                    val value = template.execute(templateYML.parameter)
+                    eventListener.template[templateYML.name] = value
+                }
+            }
         }
     }
 }

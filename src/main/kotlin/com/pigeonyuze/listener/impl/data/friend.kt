@@ -6,6 +6,8 @@ import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.listener.impl.BaseListenerImpl
 import com.pigeonyuze.listener.impl.Listener
 import com.pigeonyuze.listener.impl.ListenerImpl
+import com.pigeonyuze.listener.impl.template.EventTemplateValues
+import com.pigeonyuze.listener.impl.template.buildEventTemplate
 import net.mamoe.mirai.event.AbstractEvent
 import net.mamoe.mirai.event.events.*
 import kotlin.reflect.KClass
@@ -80,6 +82,19 @@ private class NewFriendRequestEventListener(template: MutableMap<String, Any>) :
     BotEventListenerImpl<NewFriendRequestEvent>, BaseListenerImpl<NewFriendRequestEvent>(template) {
     override val eventClass: KClass<NewFriendRequestEvent>
         get() = NewFriendRequestEvent::class
+
+    override val eventTemplate: EventTemplateValues<NewFriendRequestEvent>
+        get() = buildEventTemplate {
+            "intercept" execute {
+                intercept()
+            }
+            "accept" execute {
+                this.accept()
+            }
+            "reject" execute {
+                this.reject(it.getOrNull(0)?.toBoolean() ?: false)
+            }
+        }
 
     override fun addTemplateImpl(event: NewFriendRequestEvent) {
         super.addBaseBotTemplate(event, template)

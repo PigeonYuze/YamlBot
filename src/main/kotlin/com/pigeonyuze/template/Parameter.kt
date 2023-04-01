@@ -6,6 +6,7 @@ import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.yamlkt.YamlList
@@ -177,6 +178,16 @@ class Parameter constructor() {
         if (value is MessageEvent) return value
         errorType(index)
     }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <K : Event> getEventAndDrop(): K {
+        for ((index, any) in value.withIndex()) {
+            val event = any as? K ?: continue
+            value.removeAt(index)
+            return event
+        }
+        throw NoSuchElementException("No element with event was found in the parameter list")
+    }
     //endregion
 
     private fun setAndAddOldValue(index: Int, element: Any) {
@@ -231,7 +242,7 @@ class Parameter constructor() {
 
         lateinit var lastReturnValue: Any
 
-        var readIndex: Int = 0
+        var readIndex: Int = -1
 
         fun hasNext() = readIndex < value.lastIndex
 
@@ -389,4 +400,3 @@ fun List<String>.asParameter(): Parameter {
     return Parameter(this)
 }
 
-fun Any.asParameter(): Parameter = Parameter(listOf(this))

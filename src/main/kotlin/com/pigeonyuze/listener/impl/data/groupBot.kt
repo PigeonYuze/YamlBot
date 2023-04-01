@@ -8,6 +8,8 @@ import com.pigeonyuze.listener.impl.BaseListenerImpl
 import com.pigeonyuze.listener.impl.EventSubclassImpl
 import com.pigeonyuze.listener.impl.Listener
 import com.pigeonyuze.listener.impl.ListenerImpl
+import com.pigeonyuze.listener.impl.template.EventTemplateValues
+import com.pigeonyuze.listener.impl.template.buildEventTemplate
 import net.mamoe.mirai.event.AbstractEvent
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.utils.MiraiExperimentalApi
@@ -47,6 +49,28 @@ private class MemberJoinRequestEventListener(template: MutableMap<String, Any>) 
     override val eventClass: KClass<MemberJoinRequestEvent>
         get() = MemberJoinRequestEvent::class
 
+    override val eventTemplate: EventTemplateValues<MemberJoinRequestEvent>
+        get() = buildEventTemplate {
+            "intercept" execute {
+                intercept()
+            }
+            "reject" execute {
+                if (it.size == 2) {
+                    this.reject(it.getBoolean(0), it[1])
+                    return@execute
+                }
+                it[0].toBooleanStrictOrNull()?.also { blackList ->
+                    this.reject(blackList)
+                } ?: this.reject(message = it[0])
+            }
+            "accept" execute {
+                this.accept()
+            }
+            "ignore" execute {
+                this.ignore()
+            }
+        }
+
     override fun addTemplateImpl(event: MemberJoinRequestEvent) {
         super.addBaseBotTemplate(event, template)
         template["eventId"] = event.eventId
@@ -66,6 +90,18 @@ private class BotInvitedJoinGroupRequestEventListener(template: MutableMap<Strin
     override val eventClass: KClass<BotInvitedJoinGroupRequestEvent>
         get() = BotInvitedJoinGroupRequestEvent::class
 
+    override val eventTemplate: EventTemplateValues<BotInvitedJoinGroupRequestEvent>
+        get() = buildEventTemplate {
+            "intercept" execute {
+                intercept()
+            }
+            "accept" execute {
+                this.accept()
+            }
+            "ignore" execute {
+                this.ignore()
+            }
+        }
 
     override fun addTemplateImpl(event: BotInvitedJoinGroupRequestEvent) {
         super.addBaseBotTemplate(event, template)

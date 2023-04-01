@@ -8,11 +8,14 @@ import com.pigeonyuze.listener.impl.BaseListenerImpl
 import com.pigeonyuze.listener.impl.EventSubclassImpl
 import com.pigeonyuze.listener.impl.Listener
 import com.pigeonyuze.listener.impl.ListenerImpl
+import com.pigeonyuze.listener.impl.template.EventTemplateValues
+import com.pigeonyuze.listener.impl.template.buildEventTemplate
 import net.mamoe.mirai.contact.Platform
 import net.mamoe.mirai.event.AbstractEvent
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.event.events.MessageRecallEvent.FriendRecall
 import net.mamoe.mirai.event.events.MessageRecallEvent.GroupRecall
+import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.message.data.ids
 import net.mamoe.mirai.utils.MiraiInternalApi
 import java.util.*
@@ -183,6 +186,19 @@ private class GroupMessagePreSendEventListenerImpl(template: MutableMap<String, 
     override val eventClass: KClass<GroupMessagePreSendEvent>
         get() = GroupMessagePreSendEvent::class
 
+    override val eventTemplate: EventTemplateValues<GroupMessagePreSendEvent>
+        get() = buildEventTemplate {
+            "intercept" execute {
+                intercept()
+            }
+            "setMessage" execute {
+                this.message = it.getMessage(0)
+            }
+            "setMessagePlainText" execute {
+                this.message = PlainText(it[0])
+            }
+        }
+
     override fun addTemplateImpl(event: GroupMessagePreSendEvent) {
         super.addBaseBotTemplate(event, template)
         template["group"] = event.target
@@ -193,6 +209,19 @@ private class FriendMessagePreSendEventListenerImpl(template: MutableMap<String,
     MessagePreSendEventListenerImpl<FriendMessagePreSendEvent>, BaseListenerImpl<FriendMessagePreSendEvent>(template) {
     override val eventClass: KClass<FriendMessagePreSendEvent>
         get() = FriendMessagePreSendEvent::class
+
+    override val eventTemplate: EventTemplateValues<FriendMessagePreSendEvent>
+        get() = buildEventTemplate {
+            "intercept" execute {
+                intercept()
+            }
+            "setMessage" execute {
+                this.message = it.getMessage(0)
+            }
+            "setMessagePlainText" execute {
+                this.message = PlainText(it[0])
+            }
+        }
 
     override fun addTemplateImpl(event: FriendMessagePreSendEvent) {
         super.addBaseBotTemplate(event, template)
@@ -206,6 +235,19 @@ private class StrangerMessagePreSendEventListenerImpl(template: MutableMap<Strin
     override val eventClass: KClass<StrangerMessagePreSendEvent>
         get() = StrangerMessagePreSendEvent::class
 
+    override val eventTemplate: EventTemplateValues<StrangerMessagePreSendEvent>
+        get() = buildEventTemplate {
+            "intercept" execute {
+                intercept()
+            }
+            "setMessage" execute {
+                this.message = it.getMessage(0)
+            }
+            "setMessagePlainText" execute {
+                this.message = PlainText(it[0])
+            }
+        }
+
     override fun addTemplateImpl(event: StrangerMessagePreSendEvent) {
         super.addBaseBotTemplate(event, template)
         template["stranger"] = event.target
@@ -217,6 +259,19 @@ private class GroupTempMessagePreSendEventListenerImpl(template: MutableMap<Stri
     BaseListenerImpl<GroupTempMessagePreSendEvent>(template) {
     override val eventClass: KClass<GroupTempMessagePreSendEvent>
         get() = GroupTempMessagePreSendEvent::class
+
+    override val eventTemplate: EventTemplateValues<GroupTempMessagePreSendEvent>
+        get() = buildEventTemplate {
+            "intercept" execute {
+                intercept()
+            }
+            "setMessage" execute {
+                this.message = it.getMessage(0)
+            }
+            "setMessagePlainText" execute {
+                this.message = PlainText(it[0])
+            }
+        }
 
     override fun addTemplateImpl(event: GroupTempMessagePreSendEvent) {
         super.addBaseBotTemplate(event, template)

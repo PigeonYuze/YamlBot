@@ -1,14 +1,12 @@
-package com.pigeonyuze.com.pigeonyuze
+package com.pigeonyuze
 
-import com.pigeonyuze.BotsTool
-import com.pigeonyuze.LoggerConfig
-import com.pigeonyuze.YamlBot
 import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.message.data.ForwardMessageBuilder
 import net.mamoe.mirai.message.data.PlainText
 import java.text.SimpleDateFormat
 import java.util.*
 
+@Suppress("UNUSED")
 object LoggerManager {
 
     private inline val notRun get() = !LoggerConfig.open
@@ -26,7 +24,9 @@ object LoggerManager {
         trySendLogMessage(message ?: "")
     }
 
-    fun loggingWarn(from: Any = defaultfrom, message: String?){
+    @JvmOverloads
+    @JvmStatic
+    fun loggingWarn(from: Any = defaultfrom, message: String?) {
         if (notRun) return
         miraiLogger.warning("[$from] $message")
     }

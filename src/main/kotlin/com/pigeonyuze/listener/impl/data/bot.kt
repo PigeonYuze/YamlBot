@@ -8,6 +8,8 @@ import com.pigeonyuze.listener.impl.BaseListenerImpl
 import com.pigeonyuze.listener.impl.EventSubclassImpl
 import com.pigeonyuze.listener.impl.Listener
 import com.pigeonyuze.listener.impl.ListenerImpl
+import com.pigeonyuze.listener.impl.template.EventTemplateValues
+import com.pigeonyuze.listener.impl.template.buildEventTemplate
 import net.mamoe.mirai.event.AbstractEvent
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.utils.MiraiInternalApi
@@ -94,6 +96,16 @@ private class BotOfflineEventListener(template: MutableMap<String, Any>) :
         override val eventClass: KClass<BotOfflineEvent.Force>
             get() = BotOfflineEvent.Force::class
 
+        override val eventTemplate: EventTemplateValues<BotOfflineEvent.Force>
+            get() = buildEventTemplate {
+                "intercept" execute {
+                    intercept()
+                }
+                "setReconnect" execute {
+                    this.reconnect = it.getBoolean(0)
+                }
+            }
+
         override fun addTemplateImpl(event: BotOfflineEvent.Force) {
             addBaseBotTemplate(event, template)
             template["title"] = event.title
@@ -118,6 +130,16 @@ private class BotOfflineEventListener(template: MutableMap<String, Any>) :
     inner class RequireReconnect : BaseListenerImpl<BotOfflineEvent.RequireReconnect>(template) {
         override val eventClass: KClass<BotOfflineEvent.RequireReconnect>
             get() = BotOfflineEvent.RequireReconnect::class
+
+        override val eventTemplate: EventTemplateValues<BotOfflineEvent.RequireReconnect>
+            get() = buildEventTemplate {
+                "intercept" execute {
+                    intercept()
+                }
+                "setReconnect" execute {
+                    this.reconnect = it.getBoolean(0)
+                }
+            }
 
         override fun addTemplateImpl(event: BotOfflineEvent.RequireReconnect) {
             template["cause"] = event.cause ?: NullObject

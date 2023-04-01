@@ -200,11 +200,11 @@ private class MemberJoinEventListener(template: MutableMap<String, Any>) :
         }
     }
 
-    inner class Active : BaseListenerImpl<MemberJoinEvent.Retrieve>(template) {
-        override val eventClass: KClass<MemberJoinEvent.Retrieve>
-            get() = MemberJoinEvent.Retrieve::class
+    inner class Active : BaseListenerImpl<MemberJoinEvent.Active>(template) {
+        override val eventClass: KClass<MemberJoinEvent.Active>
+            get() = MemberJoinEvent.Active::class
 
-        override fun addTemplateImpl(event: MemberJoinEvent.Retrieve) {
+        override fun addTemplateImpl(event: MemberJoinEvent.Active) {
             this@MemberJoinEventListener.addTemplateImpl(event)
         }
     }

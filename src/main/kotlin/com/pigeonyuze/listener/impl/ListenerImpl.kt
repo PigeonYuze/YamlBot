@@ -1,7 +1,11 @@
 package com.pigeonyuze.listener.impl
 
-import com.pigeonyuze.listener.YamlEventListener
+import com.pigeonyuze.listener.EventListener
 import com.pigeonyuze.listener.impl.ListenerImpl.NoTemplateImpl
+import com.pigeonyuze.listener.impl.template.EventTemplate
+import com.pigeonyuze.listener.impl.template.EventTemplateBuilder
+import com.pigeonyuze.listener.impl.template.EventTemplateValues
+import com.pigeonyuze.listener.impl.template.buildEventTemplate
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.EventChannel
 import net.mamoe.mirai.event.EventPriority
@@ -15,7 +19,7 @@ import net.mamoe.mirai.event.Listener as MiraiListener
  *
  * 由此支持事件的监听功能
  *
- * 内置有对 [YamlEventListener] 中的支持
+ * 内置有对 [EventListener] 中的支持
  *
  * 使用 [addTemplateImpl] 实现向预定模板添加内容
  *
@@ -33,23 +37,34 @@ interface ListenerImpl<K : Event> {
      * */
     fun addTemplateImpl(event: K, template: MutableMap<String, Any>)
 
+    /**
+     * 事件的支持的模板
+     *
+     * 每一个模板都对应原事件的一个函数
+     *
+     * @see EventTemplateValues
+     * @see EventTemplate
+     * @see EventTemplateBuilder
+     * */
+    val eventTemplate: EventTemplateValues<K>
+
     fun execute(
         eventChannel: EventChannel<Event>,
-        run: ListenerImpl<K>.(Event) -> Unit,
+        run: suspend ListenerImpl<K>.(Event) -> Unit,
         priority: EventPriority, /* = EventPriority.NORMAL */
     )
 
     fun filterExecute(
         filter: String,
         eventChannel: EventChannel<Event>,
-        run: ListenerImpl<K>.(Event) -> Unit,
+        run: suspend ListenerImpl<K>.(Event) -> Unit,
         priority: EventPriority,/* = EventPriority.NORMAL */
     )
 
     fun onceExecute(
         filter: String = "",
         eventChannel: EventChannel<Event>,
-        run: ListenerImpl<K>.(Event) -> Unit,
+        run: suspend ListenerImpl<K>.(Event) -> Unit,
         priority: EventPriority,
     )
 
@@ -254,6 +269,20 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
 ) : NoTemplateImpl<BaseEvent> {
 
     /**
+     * 该项默认支持 [Event.intercept]
+     *
+     * 若要新增函数请**重新实现** [Event.intercept]
+     *
+     * @see ListenerImpl.eventTemplate
+     * */
+    override val eventTemplate: EventTemplateValues<BaseEvent>
+        get() = buildEventTemplate {
+            "intercept" execute {
+                intercept()
+            }
+        }
+
+    /**
      *  当启动监听时，此参数会被初始化为对应的监听器
      *
      *  **注意**
@@ -281,7 +310,7 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
     override fun onceExecute(
         filter: String,
         eventChannel: EventChannel<Event>,
-        run: ListenerImpl<BaseEvent>.(Event) -> Unit,
+        run: suspend ListenerImpl<BaseEvent>.(Event) -> Unit,
         priority: EventPriority,
     ) {
 
@@ -301,7 +330,7 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
 
     override fun execute(
         eventChannel: EventChannel<Event>,
-        run: ListenerImpl<BaseEvent>.(Event) -> Unit,
+        run: suspend ListenerImpl<BaseEvent>.(Event) -> Unit,
         priority: EventPriority,
     ) {
         eventListener = eventChannel.subscribeAlways(
@@ -314,16 +343,15 @@ internal abstract class BaseListenerImpl<BaseEvent : Event>(
     override fun filterExecute(
         filter: String,
         eventChannel: EventChannel<Event>,
-        run: ListenerImpl<BaseEvent>.(Event) -> Unit,
+        run: suspend ListenerImpl<BaseEvent>.(Event) -> Unit,
         priority: EventPriority,
     ) {
         eventListener = eventChannel.subscribeAlways(
             eventClass
         ) {
-            if (ListenerImpl.evaluate(
-                    filter, template
-                )
-            ) run.invoke(this@BaseListenerImpl, this)
+            if (ListenerImpl.evaluate(filter, template)) {
+                run.invoke(this@BaseListenerImpl, this)
+            }
         }
     }
 }
