@@ -1,7 +1,7 @@
 package com.pigeonyuze.template.data
 
+import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.YamlBot
-import com.pigeonyuze.com.pigeonyuze.LoggerManager
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.TemplateImpl

@@ -1,7 +1,7 @@
 package com.pigeonyuze.template.data
 
 import com.pigeonyuze.BotsTool
-import com.pigeonyuze.com.pigeonyuze.LoggerManager
+import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.template.Parameter

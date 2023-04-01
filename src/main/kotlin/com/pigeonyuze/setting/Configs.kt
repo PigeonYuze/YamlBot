@@ -1,4 +1,3 @@
-
 package com.pigeonyuze
 
 import com.pigeonyuze.YamlBot.reload
@@ -10,15 +9,34 @@ import com.pigeonyuze.command.YamlCommandDecoder.load
 import com.pigeonyuze.command.element.AnsweringMethod
 import com.pigeonyuze.command.element.ImportType
 import com.pigeonyuze.command.element.TemplateYML
+import com.pigeonyuze.listener.EventListener
+import com.pigeonyuze.listener.YamlEventListenerDecoder
+import com.pigeonyuze.listener.YamlEventListenerDecoder.load
+import com.pigeonyuze.listener.impl.Listener.Companion.execute
+import com.pigeonyuze.template.parameterOf
+import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.ValueDescription
 import net.mamoe.mirai.console.data.value
 
 
 fun runConfigsReload() {
-    UserConfig.reload()
-    CommandConfigs.load()
-    LoggerConfig.reload()
+    runBlocking {
+        UserConfig.reload()
+        CommandConfigs.load()
+        LoggerConfig.reload()
+        ListenerConfigs.load()
+        ListenerConfigs.startAllListener()
+    }
+}
+
+suspend fun ListenerConfigs.startAllListener() {
+    LoggerManager.loggingDebug("startAllListener", "Try to start all listeners...")
+    for ((index, eventListener) in this.listener.withIndex()) {
+        eventListener.execute()
+        LoggerManager.loggingTrace("startAllListener", "Start listener --> ${eventListener.type}#$index")
+    }
+    LoggerManager.loggingDebug("startAllListener", "Done.")
 }
 
 object LoggerConfig : AutoSavePluginConfig("LoggerConfig") {
@@ -131,5 +149,24 @@ object CommandConfigs : AutoSavePluginConfig(YamlCommandDecoder.saveName){
             ).toPolymorphismObject()
         )
 
+    )
+}
+
+object ListenerConfigs : AutoSavePluginConfig(YamlEventListenerDecoder.saveName) {
+    internal var listener: List<EventListener> by value(
+        listOf(
+            //example
+            EventListener(
+                type = "MemberJoinEvent",
+                run = listOf(
+                    TemplateYML(
+                        ImportType.MESSAGE_MANAGER,
+                        "sendMessageToGroup",
+                        parameterOf("%call-group%", "欢迎新人！"),
+                        "only_run"
+                    )
+                )
+            )
+        )
     )
 }

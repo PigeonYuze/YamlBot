@@ -45,7 +45,7 @@ interface Template {
 
 interface TemplateImpl<K : Any> {
     suspend fun execute(args: Parameter): K
-    val type: KClass<K>
+    val type: KClass<out K>
     val name: String
 
     companion object {
