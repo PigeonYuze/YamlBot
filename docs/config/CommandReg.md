@@ -83,7 +83,11 @@ c"
 如果在替换后出现了null 也可能标识对应的`run`返回的就是`"null"`
 
 可查看日志进行判断 ~~实在不行你可以附上完整的日志到我发的贴下面体温~~
-> V/Easy Mirai: [Command-run] Function value return: null return type: java.lang.String
+> V/Easy Mirai: `[Command-run] Function value return: null return type: java.lang.String`
+> 
+> 或者：
+> 
+> V/Easy Mirai: `[Command-run] Function value return: null return type: com.pigeonyuze.NullObject`
 > > 则代表返回的就是一个`"null"`
 
 ### Run
