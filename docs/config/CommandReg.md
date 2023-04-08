@@ -109,6 +109,11 @@ c"
   - HTTP
   - MIRAI
   - FEATURES
+  - MESSAGE
+  - GROUP_ANNOUNCEMENTS
+  - GROUP_ACTIVE
+  - REFLECTION
+  - MESSAGE_MANAGER
     <br> 中的一种
 - `call` 为调用的函数名
 - `args` 为传递的参数
