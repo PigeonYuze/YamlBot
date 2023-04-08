@@ -5,7 +5,6 @@ import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
 import net.mamoe.mirai.contact.Contact
-import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
@@ -100,7 +99,6 @@ class Parameter constructor() {
     fun withIndex() = value.withIndex()
     operator fun get(index: Int) = _stringValue[index]
     fun subList(fromIndex: Int, toIndex: Int = lastIndex): MutableList<Any> {
-        Group
         if (fromIndex < 0) throw IndexOutOfBoundsException("fromIndex = $fromIndex")
         if (toIndex > size) throw IndexOutOfBoundsException("toIndex = $toIndex")
         require(fromIndex <= toIndex) {

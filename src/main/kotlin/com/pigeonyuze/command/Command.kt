@@ -414,8 +414,7 @@ sealed interface Command {
 
             val args = /* Get values from native message*/
                 if (argsSplit.isEmpty() && argsSize == 1) {
-                    println("IT IS CAN BE NATIVE MSG")
-                    msg.asParameter()
+                    Parameter(listOf(msg))
                 } else msg.split(argsSplit).asParameter().removeFirst()
 
             LoggerManager.loggingDebug("ArgCommand-run", "Args from native message: $args")
