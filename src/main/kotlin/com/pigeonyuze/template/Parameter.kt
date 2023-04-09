@@ -1,6 +1,6 @@
 package com.pigeonyuze.template
 
-import com.pigeonyuze.command.Command.Companion.parseData
+import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
@@ -19,7 +19,6 @@ class Parameter constructor() {
 
     val stringValueList
         get() = _stringValue
-
 
     private constructor(value: List<Any>, _stringValue: List<String>) : this() {
         this.value.addAll(value)
@@ -118,12 +117,12 @@ class Parameter constructor() {
     fun parseElement(templateCall: MutableMap<String, Any?>): Parameter { //不对本值进行任何修改，具有唯一性
         val ret = Parameter()
         for (arg in _stringValue) {
-            val data = if (arg.contains("%call-")) parseData(
-                arg,
-                templateCall
-            ) else arg
+            val data = if (arg.startsWith("%call-") && arg.endsWith("%")) {
+                LoggerManager.loggingTrace("Parameter-parseElement","Find `call` evaluate,start parse element.")
+                templateCall[arg.drop(6).dropLast(1)] ?: throw IllegalArgumentException("Cannot find value --> $arg from $templateCall")
+            }else arg
             ret.value.add(data)
-            ret._stringValue.add(data)
+            ret._stringValue.add(data.toString())
         }
         return ret
     }
@@ -236,7 +235,6 @@ class Parameter constructor() {
     override fun toString(): String {
         return value.toString()
     }
-
     inner class ParameterValueReader {
         private val value: List<Any> = this@Parameter.value
 
@@ -433,6 +431,7 @@ fun YamlList.asParameter(): Parameter {
 }
 
 fun List<String>.asParameter(): Parameter {
+    println("is this")
     return Parameter(this)
 }
 

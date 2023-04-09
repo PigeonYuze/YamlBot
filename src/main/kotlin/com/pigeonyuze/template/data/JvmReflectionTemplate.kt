@@ -1,6 +1,6 @@
 package com.pigeonyuze.template.data
 
-import com.pigeonyuze.com.pigeonyuze.LoggerManager
+import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
