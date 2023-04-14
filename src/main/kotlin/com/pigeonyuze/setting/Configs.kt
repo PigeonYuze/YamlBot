@@ -42,8 +42,8 @@ suspend fun ListenerConfigs.startAllListener() {
 object LoggerConfig : AutoSavePluginConfig("LoggerConfig") {
     @ValueDescription(
         """
-        是否开启日志系统，当关闭时不再会输出任何日志信息
-        除非出现了要求被用户查看的错误，如运行错误或者错误的参数时使用
+        是否开启日志系统，当关闭时不再会输出主动发出的任何日志信息
+        除非出现了被动的错误，如运行错误或者错误的参数时输出错误
     """
     )
     val open: Boolean by value(true)

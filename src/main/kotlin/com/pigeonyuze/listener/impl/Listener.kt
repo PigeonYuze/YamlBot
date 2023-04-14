@@ -5,10 +5,12 @@ import com.pigeonyuze.listener.EventListener
 import com.pigeonyuze.listener.EventParentScopeType
 import com.pigeonyuze.listener.impl.ListenerImpl.Companion.addTemplate
 import com.pigeonyuze.listener.impl.data.*
+import com.pigeonyuze.util.SerializerData
 import com.pigeonyuze.util.mapCast
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.EventChannel
 import net.mamoe.mirai.event.GlobalEventChannel
+import net.mamoe.mirai.event.events.MessageEvent
 
 interface Listener {
 
@@ -72,7 +74,8 @@ interface Listener {
                             if (this@startListener.provideEventAllValue) addTemplate(
                                 it,
                                 eventListener.template
-                            ) else mutableMapOf()
+                            ) else mutableMapOf(),
+                            it
                         )
                     },
                     priority = this.priority
@@ -89,7 +92,8 @@ interface Listener {
                             if (this@startListener.provideEventAllValue) addTemplate(
                                 it,
                                 eventListener.template
-                            ) else mutableMapOf()
+                            ) else mutableMapOf(),
+                            it
                         )
                     },
                     priority = this.priority
@@ -106,7 +110,8 @@ interface Listener {
                         if (this@startListener.provideEventAllValue) addTemplate(
                             it,
                             eventListener.template
-                        ) else mutableMapOf()
+                        ) else mutableMapOf(),
+                        it
                     )
                 }
             )
@@ -115,6 +120,7 @@ interface Listener {
         private suspend inline fun EventListener.executeRun(
             listenerObject: ListenerImpl<out Event>,
             values: MutableMap<String, Any>,
+            event: Event,
         ) {
             for (templateYML in run) {
                 if (templateYML.use == ImportType.EVENT) {
@@ -122,13 +128,19 @@ interface Listener {
                         ?: throw IllegalArgumentException("Cannot find function ${templateYML.call}")
                     val value = template.execute(templateYML.parameter)
                     values[templateYML.name] = value
-                } else {
-                    val args = templateYML.parameter.parseElement(values.mapCast())
-                    values[templateYML.name] = templateYML.use.getProjectClass().callValue(
-                        templateYML.call,
-                        args
-                    )
+                    continue
                 }
+                val args = templateYML.parameter.parseElement(values.mapCast())
+                val templateObj = templateYML.use.getProjectClass()
+                val serializerDataOrNull =
+                    templateObj::class.annotations.filterIsInstance<SerializerData>().firstOrNull()
+                if (serializerDataOrNull != null && event is MessageEvent) args.setValueByCommand(
+                    serializerDataOrNull, event
+                )
+
+                values[templateYML.name] = templateObj.call(
+                    templateYML.call, args
+                )
             }
         }
     }

@@ -68,10 +68,7 @@ object YamlEventListenerDecoder : PluginDataStorage {
     }
 
     private fun getSerializedString(eventListeners: List<EventListener>): String {
-        return Yaml {
-            mapSerialization = YamlBuilder.MapSerialization.BLOCK_MAP
-            listSerialization = YamlBuilder.ListSerialization.BLOCK_SEQUENCE
-        }.encodeToString(eventListeners)
+        return Yaml.encodeToString(eventListeners)
     }
 
     private fun yamlElementToTemplateYML(oneRunElement: YamlMap): TemplateYML {
