@@ -454,7 +454,6 @@ fun YamlList.asParameter(): Parameter {
 }
 
 fun List<String>.asParameter(): Parameter {
-    println("is this")
     return Parameter(this)
 }
 
