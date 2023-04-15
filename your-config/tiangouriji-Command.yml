@@ -1,0 +1,19 @@
+COMMAND: 
+  -
+    name: 
+      - '/舔狗日记'
+    answeringMethod: QUOTE
+    answerContent: '%call-date% \n %call-content%'
+    run: 
+      - use: MIRAI
+        call: value
+        args: 
+          - date          
+        name: date
+    run: 
+      - use: HTTP
+        call: content
+        args: 
+          - 'https://v.api.aa1.cn/api/tiangou/index.php'
+        name: content
+    condition: []
