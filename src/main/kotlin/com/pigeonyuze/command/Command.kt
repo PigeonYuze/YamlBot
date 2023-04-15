@@ -1,6 +1,6 @@
 package com.pigeonyuze.command
 
-import com.pigeonyuze.com.pigeonyuze.LoggerManager
+import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.element.AnsweringMethod
 import com.pigeonyuze.command.element.AnsweringMethod.*
 import com.pigeonyuze.command.element.Condition
@@ -70,11 +70,11 @@ sealed interface Command {
     fun isThis(commandMessage: String): Boolean
 
     suspend fun run(event: MessageEvent) {
-       this.runImpl(event, templateCallName)
+        this.runImpl(event, templateCallName)
     }
 
     companion object {
-        private suspend fun Command.runImpl(event: MessageEvent,templateCallName: MutableMap<String, Any?>) {
+        private suspend fun Command.runImpl(event: MessageEvent, templateCallName: MutableMap<String, Any?>) {
             LoggerManager.loggingDebug("Command-run", "Start run command.....")
             LoggerManager.loggingTrace("Command-run", "Judgment running condition.")
             judgment(event)
@@ -105,6 +105,7 @@ sealed interface Command {
             }
             LoggerManager.loggingInfo("Command-run", "The `${name[0]}` command is finished(send message finish).")
         }
+
         private suspend fun Command.judgment(event: MessageEvent) {
             condition.filterIndexed { index, it ->
                 it.invoke(event, condition[if (index == 0) 0 else index - 1], templateCallName)
@@ -118,7 +119,7 @@ sealed interface Command {
 
 
         fun parseData(messageContent: String, templateCallName: MutableMap<String, Any?>): String {
-            LoggerManager.loggingDebug("Command-parseMessage", "Converts the set template to values.")
+            LoggerManager.loggingDebug("Command-parseMessage", "Converts the set template to elements.")
             var startIndex = 0
             var inCommand = false
             var retString = messageContent
@@ -172,6 +173,7 @@ sealed interface Command {
             return template.execute(args)
         }
 
+        @Suppress("FunctionName")
         private fun Command._initImpl() {
             val run by lazy { this.run }
             val name by lazy { this.name }
@@ -208,6 +210,7 @@ sealed interface Command {
         init {
             _initImpl()
         }
+
         override fun isThis(commandMessage: String): Boolean {
             return commandMessage in name
         }
@@ -256,6 +259,7 @@ sealed interface Command {
 
         @Transient
         val templateCallNameImpl: MutableMap<String, Any?> = mutableMapOf()
+
         @Transient
         override val templateCallName: MutableMap<String, Any?> = templateCallNameImpl
 
@@ -406,12 +410,12 @@ sealed interface Command {
                 } ?: continue
             }
 
+
             LoggerManager.loggingTrace("ArgCommand-run", "Pure parameter part: $msg")
 
             val args = /* Get values from native message*/
                 if (argsSplit.isEmpty() && argsSize == 1) {
-                    println("IT IS CAN BE NATIVE MSG")
-                    msg.asParameter()
+                    Parameter(listOf(msg))
                 } else msg.split(argsSplit).asParameter().removeFirst()
 
             LoggerManager.loggingDebug("ArgCommand-run", "Args from native message: $args")
@@ -435,7 +439,10 @@ sealed interface Command {
                     addTemplateFromArgs(args.subArgs(0, argsSize))
                 }
             }.recoverCatching {
-                LoggerManager.loggingWarn("ArgCommand-run",it.message ?: "Error ${it::class.qualifiedName ?: "<anonymous class>"}")
+                LoggerManager.loggingWarn(
+                    "ArgCommand-run",
+                    it.message ?: "Error ${it::class.qualifiedName ?: "<anonymous class>"}"
+                )
                 return
             }
             LoggerManager.loggingDebug("ArgCommand-run", "Added all parameters to TemplateCallMap >> super")
@@ -475,8 +482,8 @@ sealed interface Command {
                 else args.add(nextMessage)
             }
         }
-        
-        private suspend fun errorArg(argIndex: Int, event: MessageEvent, args: Parameter,runFrequency: Int = 0) {
+
+        private suspend fun errorArg(argIndex: Int, event: MessageEvent, args: Parameter, runFrequency: Int = 0) {
             if (runFrequency > 3) {
                 event.quote("错误的次数太多了,已自动停止！")
                 throw Throwable("Stop running ArgCommand.errorArg,too many runs!")
@@ -512,6 +519,7 @@ sealed interface Command {
          * 反之则返回`null`
          * */
         private inline fun <K> checkCommandName(checkNativeObj: String, shouldBe: String, run: () -> K): K? {
+            println("$checkNativeObj == $shouldBe , by $isPrefixForAll.")
             if (isPrefixForAll) {
                 if (checkNativeObj.startsWith(shouldBe)) {
                     return run.invoke()

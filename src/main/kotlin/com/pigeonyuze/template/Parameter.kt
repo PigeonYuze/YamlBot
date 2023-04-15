@@ -1,11 +1,12 @@
 package com.pigeonyuze.template
 
-import com.pigeonyuze.command.Command.Companion.parseData
+import com.pigeonyuze.LoggerManager
+import com.pigeonyuze.command.Command
 import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
 import net.mamoe.mirai.contact.Contact
-import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.yamlkt.YamlList
@@ -19,7 +20,6 @@ class Parameter constructor() {
 
     val stringValueList
         get() = _stringValue
-
 
     private constructor(value: List<Any>, _stringValue: List<String>) : this() {
         this.value.addAll(value)
@@ -99,7 +99,6 @@ class Parameter constructor() {
     fun withIndex() = value.withIndex()
     operator fun get(index: Int) = _stringValue[index]
     fun subList(fromIndex: Int, toIndex: Int = lastIndex): MutableList<Any> {
-        Group
         if (fromIndex < 0) throw IndexOutOfBoundsException("fromIndex = $fromIndex")
         if (toIndex > size) throw IndexOutOfBoundsException("toIndex = $toIndex")
         require(fromIndex <= toIndex) {
@@ -115,21 +114,45 @@ class Parameter constructor() {
 
     fun subArgs(fromIndex: Int, toIndex: Int = value.lastIndex) = Parameter(value.subList(fromIndex, toIndex))
     fun random() = this[(0..size).random()]
-    fun errorType(index: Int): Nothing = illegalArgument("Error parameter type in $index")
+    fun errorType(index: Int): Nothing = illegalArgument("Error parameter type in $index of Parameter$this")
     fun parseElement(templateCall: MutableMap<String, Any?>): Parameter { //不对本值进行任何修改，具有唯一性
-        val ret = Parameter()
-        for (arg in _stringValue) {
-            val data = if (arg.contains("%call-")) parseData(arg, templateCall) else arg
+        val ret = Parameter() //new bug... wait for me,pls!
+        for (arg in value) {
+            var data = arg
+            runIfIsInstance<String>(arg) {
+                if (startsWith("%call-") && endsWith("%")) {
+                    LoggerManager.loggingTrace("Parameter-parseElement", "Find `call` evaluate,start parse element.")
+                    data = templateCall[drop(6).dropLast(1)]
+                        ?: throw IllegalArgumentException("Cannot find value --> $arg from $templateCall")
+                    return@runIfIsInstance
+                }
+                if (!contains("%call-")) {
+                    return@runIfIsInstance
+                }
+                data = Command.parseData(this, templateCall) //may not good
+            }
             ret.value.add(data)
-            ret._stringValue.add(data)
+            ret._stringValue.add(data.toString())
         }
+        LoggerManager.loggingDebug("Parameter-parseElement", "Done. -> ${ret.debugToString()}")
         return ret
+    }
+
+    private inline fun <reified K> runIfIsInstance(obj: Any, run: K.() -> Unit) {
+        if (obj !is K) {
+            return
+        }
+        run.invoke(obj)
     }
 
     //region Get function
     fun getOrNull(index: Int): String? {
         return if (index > lastIndex) null
         else this[index]
+    }
+
+    internal fun debugToString() = value.joinToString {
+        "$it: ${it::class.simpleName}"
     }
 
     fun getLong(index: Int): Long {
@@ -176,6 +199,16 @@ class Parameter constructor() {
         val value = value[index]
         if (value is MessageEvent) return value
         errorType(index)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <K : Event> getEventAndDrop(): K {
+        for ((index, any) in value.withIndex()) {
+            val event = any as? K ?: continue
+            value.removeAt(index)
+            return event
+        }
+        throw NoSuchElementException("No element with event was found in the parameter list")
     }
     //endregion
 
@@ -233,9 +266,11 @@ class Parameter constructor() {
             return value[index].toString()
         }
 
-        var readIndex: Int = 0
+        var readIndex: Int = -1
 
-        fun hasNext() = readIndex < value.lastIndex
+        val nonNegativeIndex = if (readIndex < 0) 0 else readIndex
+
+        fun hasNext() = nonNegativeIndex < value.lastIndex
 
         @DslParameterReader
         suspend infix fun <K> Int.read(run: suspend Any.() -> K): K {
@@ -251,6 +286,20 @@ class Parameter constructor() {
             val runValue = if (value[this] is Long) value[this] as Long
             else _stringValue[this].toLongOrNull() ?: errorType(this)
             return run.invoke(runValue)
+        }
+
+        fun long(index: Int = nonNegativeIndex): Long {
+            this@ParameterValueReader.readIndex = index
+
+            return if (value[index] is Long) value[index] as Long
+            else _stringValue[index].toLongOrNull() ?: errorType(index)
+        }
+
+        infix fun longOrNull(index: Int): Long? {
+            this@ParameterValueReader.readIndex = index
+
+            return if (value[index] is Long) value[index] as Long
+            else _stringValue[index].toLongOrNull()
         }
 
         @DslParameterReader
@@ -287,7 +336,7 @@ class Parameter constructor() {
             )
         }
 
-        fun map(index: Int = readIndex): Map<out Any?, Any?> {
+        fun map(index: Int = nonNegativeIndex): Map<out Any?, Any?> {
             this@ParameterValueReader.readIndex = index
             return when (val value = value[index]) {
                 is Map<*, *> -> value
@@ -319,7 +368,7 @@ class Parameter constructor() {
             )
         }
 
-        fun list(index: Int = readIndex): List<*> {
+        fun list(index: Int = nonNegativeIndex): List<*> {
             this@ParameterValueReader.readIndex = index
             return when (val value = value[index]) {
                 is List<*> -> value
@@ -350,7 +399,7 @@ class Parameter constructor() {
             return _stringValue[index].toIntOrNull() ?: errorType(index)
         }
 
-        fun intOrNull(index: Int = readIndex): Int? {
+        fun intOrNull(index: Int = nonNegativeIndex): Int? {
             this@ParameterValueReader.readIndex = index
             return _stringValue[index].toIntOrNull()
         }
@@ -408,4 +457,3 @@ fun List<String>.asParameter(): Parameter {
     return Parameter(this)
 }
 
-fun Any.asParameter(): Parameter = Parameter(listOf(this))

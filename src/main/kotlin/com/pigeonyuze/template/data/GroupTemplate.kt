@@ -362,21 +362,22 @@ object GroupActiveTemplate : Template {
                 return getActiveFromParameter(args).queryHonorHistory(nameMapping(args[1]))
             }
 
+            val nameIdMapping = mapOf(
+                "学术新星" to GroupHonorType.BRONZE_ID,
+                "快乐源泉" to GroupHonorType.EMOTION_ID,
+                "至尊学神" to GroupHonorType.GOLDEN_ID,
+                "群聊炽焰" to GroupHonorType.LEGEND_ID,
+                "群聊之火" to GroupHonorType.PERFORMER_ID,
+                "善财福禄寿" to GroupHonorType.RED_PACKET_ID,
+                "壕礼皇冠" to GroupHonorType.RICHER_ID,
+                "顶尖学霸" to GroupHonorType.SILVER_ID,
+                "冒尖小春笋" to GroupHonorType.STRONG_NEWBIE_ID,
+                "龙王" to GroupHonorType.TALKATIVE_ID,
+                "一笔当先" to GroupHonorType.WHIRLWIND_ID
+            )
+
             private fun nameMapping(name: String): GroupHonorType {
-                val id = name.toIntOrNull() ?: when (name) {
-                    "学术新星" -> GroupHonorType.BRONZE_ID
-                    "快乐源泉" -> GroupHonorType.EMOTION_ID
-                    "至尊学神" -> GroupHonorType.GOLDEN_ID
-                    "群聊炽焰" -> GroupHonorType.LEGEND_ID
-                    "群聊之火" -> GroupHonorType.PERFORMER_ID
-                    "善财福禄寿" -> GroupHonorType.RED_PACKET_ID
-                    "壕礼皇冠" -> GroupHonorType.RICHER_ID
-                    "顶尖学霸" -> GroupHonorType.SILVER_ID
-                    "冒尖小春笋" -> GroupHonorType.STRONG_NEWBIE_ID
-                    "龙王" -> GroupHonorType.TALKATIVE_ID
-                    "一笔当先" -> GroupHonorType.WHIRLWIND_ID
-                    else -> canNotFind(name, "NameMapping")
-                }
+                val id = name.toIntOrNull() ?: nameIdMapping[name] ?: canNotFind(name, "NameMapping")
                 if (id !in 0..11) {
                     nonImpl("Impl_NewGroupHonorTypeObj", "nameMapping", "the id $id should from 0 to 11")
                 }

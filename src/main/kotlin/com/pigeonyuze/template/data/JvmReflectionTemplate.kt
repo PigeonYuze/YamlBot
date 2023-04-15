@@ -1,6 +1,6 @@
 package com.pigeonyuze.template.data
 
-import com.pigeonyuze.com.pigeonyuze.LoggerManager
+import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
@@ -333,7 +333,7 @@ object JvmReflectionTemplate : Template {
                                         "template-setFinalFieldJava",
                                         "The specified field could not be modified because a InaccessibleObjectException error occurred while trying to modify 'getDeclaredFields0' by reflection,\nPlease add '--add-opens java.base/java.lang=ALL-UNNAMED' to JVM running options"
                                     )
-                                    throw TaskException()
+                                    throw Exception()
                                 }
                                 throw it
                             }

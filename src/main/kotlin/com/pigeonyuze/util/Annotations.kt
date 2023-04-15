@@ -1,14 +1,15 @@
 package com.pigeonyuze.util
 
-
 @MustBeDocumented
 @Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.SOURCE)
 annotation class FunctionArgsSize(
     val sizes : IntArray
 )
 
 @Repeatable
 @Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.SOURCE)
 annotation class ArgComment(
     val size : Int,
     val comment : Array<String>
@@ -42,3 +43,6 @@ annotation class NonGroup
 
 @DslMarker
 annotation class DslParameterReader
+
+@DslMarker
+annotation class DslEventTemplateBuilder

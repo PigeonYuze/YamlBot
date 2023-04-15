@@ -1,6 +1,7 @@
 package com.pigeonyuze.command.element
 
 import com.pigeonyuze.command.Command
+import com.pigeonyuze.listener.impl.template.EventTemplate
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.asParameter
@@ -169,6 +170,10 @@ open class TemplateYML private constructor() {
         this.parameter = args
         //endregion
     }
+
+    override fun toString(): String {
+        return "TemplateYML(use=$use, call='$call', parameter=$parameter, args=$args, name='$name')"
+    }
 }
 
 @Serializable
@@ -196,6 +201,17 @@ enum class ImportType {
     },
     GROUP_ACTIVE {
         override fun getProjectClass(): Template = GroupActiveTemplate
+    },
+    /**
+     * @see EventTemplate
+     * */
+    EVENT {
+        override fun getProjectClass(): Template {
+            throw NotImplementedError()
+        }
+    },
+    MESSAGE_MANAGER {
+        override fun getProjectClass(): Template = MessageManagerTemplate
     },
     REFLECTION {
         override fun getProjectClass(): Template = JvmReflectionTemplate

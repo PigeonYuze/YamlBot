@@ -1,4 +1,3 @@
-
 package com.pigeonyuze
 
 import com.pigeonyuze.YamlBot.reload
@@ -10,22 +9,41 @@ import com.pigeonyuze.command.YamlCommandDecoder.load
 import com.pigeonyuze.command.element.AnsweringMethod
 import com.pigeonyuze.command.element.ImportType
 import com.pigeonyuze.command.element.TemplateYML
+import com.pigeonyuze.listener.EventListener
+import com.pigeonyuze.listener.YamlEventListenerDecoder
+import com.pigeonyuze.listener.YamlEventListenerDecoder.load
+import com.pigeonyuze.listener.impl.Listener.Companion.execute
+import com.pigeonyuze.template.parameterOf
+import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.ValueDescription
 import net.mamoe.mirai.console.data.value
 
 
 fun runConfigsReload() {
-    UserConfig.reload()
-    CommandConfigs.load()
-    LoggerConfig.reload()
+    runBlocking {
+        UserConfig.reload()
+        CommandConfigs.load()
+        LoggerConfig.reload()
+        ListenerConfigs.load()
+        ListenerConfigs.startAllListener()
+    }
+}
+
+suspend fun ListenerConfigs.startAllListener() {
+    LoggerManager.loggingDebug("startAllListener", "Try to start all listeners...")
+    for ((index, eventListener) in this.listener.withIndex()) {
+        eventListener.execute()
+        LoggerManager.loggingTrace("startAllListener", "Start listener --> ${eventListener.type}#$index")
+    }
+    LoggerManager.loggingDebug("startAllListener", "Done.")
 }
 
 object LoggerConfig : AutoSavePluginConfig("LoggerConfig") {
     @ValueDescription(
         """
-        是否开启日志系统，当关闭时不再会输出任何日志信息
-        除非出现了要求被用户查看的错误，如运行错误或者错误的参数时使用
+        是否开启日志系统，当关闭时不再会输出主动发出的任何日志信息
+        除非出现了被动的错误，如运行错误或者错误的参数时输出错误
     """
     )
     val open: Boolean by value(true)
@@ -131,5 +149,24 @@ object CommandConfigs : AutoSavePluginConfig(YamlCommandDecoder.saveName){
             ).toPolymorphismObject()
         )
 
+    )
+}
+
+object ListenerConfigs : AutoSavePluginConfig(YamlEventListenerDecoder.saveName) {
+    internal var listener: List<EventListener> by value(
+        listOf(
+            //example
+            EventListener(
+                type = "MemberJoinEvent",
+                run = listOf(
+                    TemplateYML(
+                        ImportType.MESSAGE_MANAGER,
+                        "sendMessageToGroup",
+                        parameterOf("%call-group%", "欢迎新人！"),
+                        "only_run"
+                    )
+                )
+            )
+        )
     )
 }
