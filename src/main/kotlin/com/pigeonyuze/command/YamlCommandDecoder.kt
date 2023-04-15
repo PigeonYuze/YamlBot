@@ -1,8 +1,7 @@
 package com.pigeonyuze.command
 
-import com.pigeonyuze.CommandConfigs
+import com.pigeonyuze.*
 import com.pigeonyuze.CommandPolymorphism
-import com.pigeonyuze.YamlBot
 import com.pigeonyuze.YamlBot.reload
 import com.pigeonyuze.command.Command.*
 import com.pigeonyuze.command.Command.ArgCommand.Type.*
@@ -93,7 +92,7 @@ object YamlCommandDecoder : PluginDataStorage {
         val argsSplit = (commandElement["argsSplit"] as? YamlLiteral)?.content ?: " "
         val requestYaml = commandElement["request"] as? YamlMap
         val describeYaml = commandElement["describe"] as? YamlMap
-        val isPrefixForAll = (commandElement["isPrefix"] as? YamlLiteral)?.content?.toBooleanStrictOrNull() ?: true
+        val isPrefixForAll = (commandElement["isPrefixForAll"] as? YamlLiteral)?.content?.toBooleanStrictOrNull() ?: true
         val name = mutableListOf<String>()
         for (oneNameElement in nameYaml) {
             if (oneNameElement !is YamlLiteral) name.add(oneNameElement.toString())
@@ -266,14 +265,15 @@ object YamlCommandDecoder : PluginDataStorage {
             file.copyTo(file.resolveSibling("${file.name}.${System.currentTimeMillis()}.bak"))
             throw e
         }
-
+        LoggerManager.loggingDebug("load-command","Start read CommandReg.yml ->")
         val commands = (yaml as YamlMap)["COMMAND"] as YamlList
         val commandList = mutableListOf<CommandPolymorphism>()
-        for (commandYaml in commands) { //循环尝试反序列化为一个Command类
+        for ((index,commandYaml) in commands.withIndex()) { //循环尝试反序列化为一个Command类
             if (commandYaml !is YamlMap) continue
             val command: Command =
                 readToArgsCommand(commandYaml) ?: readToCommand(commandYaml) ?: readToOnlyCommand(commandYaml)
                 ?: illegalArgument("Cannot initialize object to a command!")
+            LoggerManager.loggingTrace("load-command","$command #$index")
             commandList.add(command.toPolymorphismObject())
         }
         CommandConfigs.COMMAND = commandList

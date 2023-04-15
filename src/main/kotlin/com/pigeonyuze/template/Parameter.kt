@@ -1,11 +1,11 @@
 package com.pigeonyuze.template
 
-import com.pigeonyuze.command.Command.Companion.parseData
+import com.pigeonyuze.LoggerManager
+import com.pigeonyuze.command.Command
 import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
 import net.mamoe.mirai.contact.Contact
-import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
@@ -20,7 +20,6 @@ class Parameter constructor() {
 
     val stringValueList
         get() = _stringValue
-
 
     private constructor(value: List<Any>, _stringValue: List<String>) : this() {
         this.value.addAll(value)
@@ -100,7 +99,6 @@ class Parameter constructor() {
     fun withIndex() = value.withIndex()
     operator fun get(index: Int) = _stringValue[index]
     fun subList(fromIndex: Int, toIndex: Int = lastIndex): MutableList<Any> {
-        Group
         if (fromIndex < 0) throw IndexOutOfBoundsException("fromIndex = $fromIndex")
         if (toIndex > size) throw IndexOutOfBoundsException("toIndex = $toIndex")
         require(fromIndex <= toIndex) {
@@ -118,22 +116,43 @@ class Parameter constructor() {
     fun random() = this[(0..size).random()]
     fun errorType(index: Int): Nothing = illegalArgument("Error parameter type in $index of Parameter$this")
     fun parseElement(templateCall: MutableMap<String, Any?>): Parameter { //不对本值进行任何修改，具有唯一性
-        val ret = Parameter()
-        for (arg in _stringValue) {
-            val data = if (arg.contains("%call-")) parseData(
-                arg,
-                templateCall
-            ) else arg
+        val ret = Parameter() //new bug... wait for me,pls!
+        for (arg in value) {
+            var data = arg
+            runIfIsInstance<String>(arg) {
+                if (startsWith("%call-") && endsWith("%")) {
+                    LoggerManager.loggingTrace("Parameter-parseElement", "Find `call` evaluate,start parse element.")
+                    data = templateCall[drop(6).dropLast(1)]
+                        ?: throw IllegalArgumentException("Cannot find value --> $arg from $templateCall")
+                    return@runIfIsInstance
+                }
+                if (!contains("%call-")) {
+                    return@runIfIsInstance
+                }
+                data = Command.parseData(this, templateCall) //may not good
+            }
             ret.value.add(data)
-            ret._stringValue.add(data)
+            ret._stringValue.add(data.toString())
         }
+        LoggerManager.loggingDebug("Parameter-parseElement", "Done. -> ${ret.debugToString()}")
         return ret
+    }
+
+    private inline fun <reified K> runIfIsInstance(obj: Any, run: K.() -> Unit) {
+        if (obj !is K) {
+            return
+        }
+        run.invoke(obj)
     }
 
     //region Get function
     fun getOrNull(index: Int): String? {
         return if (index > lastIndex) null
         else this[index]
+    }
+
+    internal fun debugToString() = value.joinToString {
+        "$it: ${it::class.simpleName}"
     }
 
     fun getLong(index: Int): Long {

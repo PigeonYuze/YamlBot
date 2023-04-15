@@ -173,6 +173,7 @@ sealed interface Command {
             return template.execute(args)
         }
 
+        @Suppress("FunctionName")
         private fun Command._initImpl() {
             val run by lazy { this.run }
             val name by lazy { this.name }
@@ -414,8 +415,7 @@ sealed interface Command {
 
             val args = /* Get values from native message*/
                 if (argsSplit.isEmpty() && argsSize == 1) {
-                    println("IT IS CAN BE NATIVE MSG")
-                    msg.asParameter()
+                    Parameter(listOf(msg))
                 } else msg.split(argsSplit).asParameter().removeFirst()
 
             LoggerManager.loggingDebug("ArgCommand-run", "Args from native message: $args")
@@ -519,6 +519,7 @@ sealed interface Command {
          * 反之则返回`null`
          * */
         private inline fun <K> checkCommandName(checkNativeObj: String, shouldBe: String, run: () -> K): K? {
+            println("$checkNativeObj == $shouldBe , by $isPrefixForAll.")
             if (isPrefixForAll) {
                 if (checkNativeObj.startsWith(shouldBe)) {
                     return run.invoke()
