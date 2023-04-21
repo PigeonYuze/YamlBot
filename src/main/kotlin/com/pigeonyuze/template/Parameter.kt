@@ -7,6 +7,8 @@ import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.event.Event
+import net.mamoe.mirai.event.events.FriendEvent
+import net.mamoe.mirai.event.events.GroupEvent
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.yamlkt.YamlList
@@ -15,7 +17,7 @@ import net.mamoe.yamlkt.YamlMap
 import net.mamoe.yamlkt.YamlNull
 
 class Parameter constructor() {
-    private val value = mutableListOf<Any>()
+    val value = mutableListOf<Any>()
     private val _stringValue = mutableListOf<String>()
 
     val stringValueList
@@ -201,6 +203,11 @@ class Parameter constructor() {
         errorType(index)
     }
 
+    inline fun <reified K> getOrNull(index: Int): K? {
+        if (index > this.lastIndex) return null
+        return value[index] as? K
+    }
+
     @Suppress("UNCHECKED_CAST")
     fun <K : Event> getEventAndDrop(): K {
         for ((index, any) in value.withIndex()) {
@@ -226,16 +233,17 @@ class Parameter constructor() {
     }
 
 
-    fun setValueByCommand(annotation: SerializerData, event: MessageEvent): Parameter {
+    fun setValueByCommand(annotation: SerializerData, event: Event): Parameter {
         val ret = Parameter(value, _stringValue)
         val plusElement: Any = when (annotation.serializerJSONType) {
-            MESSAGE -> event.message
-            SUBJECT_ID -> event.subject.id
+            MESSAGE -> (event as MessageEvent).message
+            SUBJECT_ID -> (event as MessageEvent).subject.id
             EVENT_ALL -> event
-            SENDER_NAME -> event.senderName
-            SENDER_NICK -> event.sender.nick
-            SENDER_ID -> event.sender.id
-            CONTACT -> event.subject
+            SENDER_NAME -> (event as MessageEvent).senderName
+            SENDER_NICK -> (event as MessageEvent).sender.nick
+            SENDER_ID -> (event as MessageEvent).sender.id
+            CONTACT -> ((event as? GroupEvent)?.group ?: (event as? FriendEvent)?.friend
+            ?: (event as MessageEvent).subject) //仅有这些支持联系人的查询
         }
 
         if (lastIndex >= (annotation.buildIndex) && annotation.buildIndex != -1) {

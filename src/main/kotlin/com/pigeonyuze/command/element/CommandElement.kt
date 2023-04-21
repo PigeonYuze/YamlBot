@@ -215,6 +215,9 @@ enum class ImportType {
     },
     REFLECTION {
         override fun getProjectClass(): Template = JvmReflectionTemplate
+    },
+    ROAMING_SUPPORTED {
+        override fun getProjectClass(): Template = RoamingSupportedTemplate
     }
 
     ;

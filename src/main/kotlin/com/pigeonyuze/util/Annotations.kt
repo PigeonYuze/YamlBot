@@ -46,3 +46,6 @@ annotation class DslParameterReader
 
 @DslMarker
 annotation class DslEventTemplateBuilder
+
+@DslMarker
+annotation class DslTemplateBuilder

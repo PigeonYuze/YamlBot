@@ -18,7 +18,7 @@ object YamlBot : KotlinPlugin(
     JvmPluginDescription(
         id = "com.pigeonyuze.yaml-bot",
         name = "YamlBot",
-        version = "1.5.0",
+        version = "1.7.0",
     ) {
         author("Pigeon_Yuze")
     }

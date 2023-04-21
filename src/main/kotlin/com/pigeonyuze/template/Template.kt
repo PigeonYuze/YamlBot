@@ -9,11 +9,20 @@ interface Template {
     /**
      *
      * */
-    suspend fun callValue(functionName: String, args: Parameter): Any
+    suspend fun callValue(functionName: String, args: Parameter): Any {
+        return findOrNull(functionName)!!.execute(args)
+    }
 
-    fun functionExist(functionName: String): Boolean
+    fun functionExist(functionName: String): Boolean {
+        return findOrNull(functionName) != null
+    }
 
-    fun findOrNull(functionName: String): TemplateImpl<*>?
+    fun findOrNull(functionName: String): TemplateImpl<*>? {
+        values().forEach {
+            if (it.name == functionName) return it
+        }
+        return null
+    }
 
     /**
      * function will not return null!
