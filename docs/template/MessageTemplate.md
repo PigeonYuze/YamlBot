@@ -287,6 +287,49 @@ MusicShare(
 
 该卡片的内容，它可以是`Json`或者为`Xml`
 
+### SendRockPaperScissors
+
+创造并发送一个剪刀石头布表情
+
+|          name          | returnType |
+|:----------------------:|:----------:|
+| sendRockPaperScissors  |    Unit    |
+
+**参数说明**
+
+通常来说，插件会自动根据环境提供联系人背景
+
+你可以提供一个可选参数以指定输出对应的表情：
+
+- `ROCK`石头
+- `SCISSORS` 剪刀
+- `PAPER` 布
+
+**默认会随机抽取**
+
+### ReadRockPaperScissors
+
+读取剪刀石头布表情的内容
+
+|         name          | returnType |
+|:---------------------:|:----------:|
+| readRockPaperScissors |    Any     |
+
+**参数说明**
+
+提供读取的对象，可选以下内容
+
+- `content` 内容，如`[布]`
+- `name` 名称，如 `[开心]`
+- `id` 内部实验性的`Id`, 在`2.14.0`中始终为`11415`
+- `internalId` 内部`Id`，在`2.14.0`中可为以下
+  - `48` 石头
+  - `49` 剪刀
+  - `50` 布
+- `eliminates`  判断 **当前手势** 能否淘汰对手 (**需要传递另一个`RockPaperScissors`**)
+  
+  赢返回 `true`，输返回 `false`，平局时返回 `null`(`NullObject`)
+
 ---
 
 以下信息的创造已在`MiraiTemplate`中声明，你可以前往对应的文档创造
