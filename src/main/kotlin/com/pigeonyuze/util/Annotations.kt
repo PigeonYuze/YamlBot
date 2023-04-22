@@ -17,7 +17,7 @@ annotation class ArgComment(
 
 @Target(AnnotationTarget.CLASS)
 @Repeatable
-annotation class SerializerData(val buildIndex: Int, val serializerJSONType: SerializerType){
+annotation class SerializerData(val buildIndex: Int, val serializerJSONType: SerializerType,val isByNullWhenEvent: Boolean = false){
     enum class SerializerType{
         MESSAGE,
         SUBJECT_ID,

@@ -1,7 +1,9 @@
 package com.pigeonyuze.template
 
 import com.pigeonyuze.YamlBot
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
 
 interface Template {
@@ -52,10 +54,13 @@ interface Template {
 }
 
 
-interface TemplateImpl<K : Any> {
+interface TemplateImpl<K : Any> : CoroutineScope {
     suspend fun execute(args: Parameter): K
     val type: KClass<out K>
     val name: String
+
+    override val coroutineContext: CoroutineContext
+        get() = CoroutineScope(YamlBot.coroutineContext).coroutineContext
 
     companion object {
         fun TemplateImpl<out Any>.canNotFind(what: String, where: String): Nothing {

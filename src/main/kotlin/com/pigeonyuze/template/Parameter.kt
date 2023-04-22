@@ -2,6 +2,7 @@ package com.pigeonyuze.template
 
 import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.Command
+import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
@@ -16,6 +17,7 @@ import net.mamoe.yamlkt.YamlLiteral
 import net.mamoe.yamlkt.YamlMap
 import net.mamoe.yamlkt.YamlNull
 
+@Suppress("UNUSED")
 class Parameter constructor() {
     val value = mutableListOf<Any>()
     private val _stringValue = mutableListOf<String>()
@@ -236,14 +238,15 @@ class Parameter constructor() {
     fun setValueByCommand(annotation: SerializerData, event: Event): Parameter {
         val ret = Parameter(value, _stringValue)
         val plusElement: Any = when (annotation.serializerJSONType) {
-            MESSAGE -> (event as MessageEvent).message
-            SUBJECT_ID -> (event as MessageEvent).subject.id
+            MESSAGE -> if (event !is MessageEvent && annotation.isByNullWhenEvent) NullObject else (event as MessageEvent).message
+            SUBJECT_ID -> if (event !is MessageEvent && annotation.isByNullWhenEvent) NullObject else (event as MessageEvent).message
             EVENT_ALL -> event
-            SENDER_NAME -> (event as MessageEvent).senderName
-            SENDER_NICK -> (event as MessageEvent).sender.nick
-            SENDER_ID -> (event as MessageEvent).sender.id
+            SENDER_NAME -> if (event !is MessageEvent && annotation.isByNullWhenEvent) NullObject else (event as MessageEvent).message
+            SENDER_NICK -> if (event !is MessageEvent && annotation.isByNullWhenEvent) NullObject else (event as MessageEvent).message
+            SENDER_ID -> if (event !is MessageEvent && annotation.isByNullWhenEvent) NullObject else (event as MessageEvent).message
             CONTACT -> ((event as? GroupEvent)?.group ?: (event as? FriendEvent)?.friend
-            ?: (event as MessageEvent).subject) //仅有这些支持联系人的查询
+            ?: (event as? MessageEvent)?.subject)
+                ?: if (annotation.isByNullWhenEvent) NullObject else throw NullPointerException("Cannot read event")//仅有这些支持联系人的查询
         }
 
         if (lastIndex >= (annotation.buildIndex) && annotation.buildIndex != -1) {
