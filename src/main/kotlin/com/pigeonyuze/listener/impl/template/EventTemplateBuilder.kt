@@ -41,9 +41,9 @@ import kotlin.reflect.KClass
  * ```
  * */
 class EventTemplateBuilder<K : Event> {
-    val elements: MutableList<TemplateNode> = mutableListOf()
+    val elements: MutableList<EventTemplateNode> = mutableListOf()
 
-    inner class TemplateNode {
+    inner class EventTemplateNode{
         var name: String = ""
         var type: KClass<out Any> = Any::class
         var call: suspend K.(Parameter) -> Any = {}
@@ -61,7 +61,7 @@ class EventTemplateBuilder<K : Event> {
     @DslEventTemplateBuilder
     inline infix fun <reified R : Any> String.execute(noinline call: suspend K.(Parameter) -> R) {
         elements.add(
-            TemplateNode()
+            EventTemplateNode()
                     named this
                     typed R::class
                     called call
@@ -69,13 +69,13 @@ class EventTemplateBuilder<K : Event> {
     }
 
     /**
-     *  获取 [TemplateNode] 体设置内容
-     * - 使用 [TemplateNode.named] 设置名称
-     * - 使用 [TemplateNode.typed] 设置类型
-     * - 使用 [TemplateNode.called] 设置`called`体
+     *  获取 [EventTemplateNode] 体设置内容
+     * - 使用 [EventTemplateNode.named] 设置名称
+     * - 使用 [EventTemplateNode.typed] 设置类型
+     * - 使用 [EventTemplateNode.called] 设置`called`体
      * */
-    fun add(setting: TemplateNode.() -> Unit) {
-        val node = TemplateNode()
+    fun add(setting: EventTemplateNode.() -> Unit) {
+        val node = EventTemplateNode()
         setting(node)
         elements.add(node)
     }

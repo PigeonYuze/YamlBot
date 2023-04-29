@@ -5,10 +5,17 @@ import com.pigeonyuze.listener.EventListener
 import com.pigeonyuze.listener.EventParentScopeType
 import com.pigeonyuze.listener.impl.ListenerImpl.Companion.addTemplate
 import com.pigeonyuze.listener.impl.data.*
+import com.pigeonyuze.util.SerializerData
 import com.pigeonyuze.util.mapCast
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
+import kotlinx.coroutines.*
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.EventChannel
 import net.mamoe.mirai.event.GlobalEventChannel
+import net.mamoe.mirai.event.events.MessageEvent
 
 interface Listener {
 
@@ -30,21 +37,33 @@ interface Listener {
         )
 
         suspend fun EventListener.execute(name: String = this.type) {
-            val yamlEventListener = this
-            var listenerObject: ListenerImpl<out Event>? = null
-            for (it in listeners) {
-                val obj: ListenerImpl<out Event>? = it.searchBuildListenerOrNull(name, this.template)
-                if (obj != null) {
-                    listenerObject = obj
-                    break
+            val yamlEventListener = this@execute
+            val listenerObject = coroutineScope {
+                val jobs: MutableList<Job> = mutableListOf()
+                var listenerObject: ListenerImpl<out Event>? = null
+                for (it in listeners) {
+                    jobs.add(launch {
+                        it.searchBuildListenerOrNull(name, template)?.also {obj: ListenerImpl<out Event> ->
+                            listenerObject = obj
+                            cancel()
+                        }
+                    })
+
+                    // 当达到最大协程数时，等待所有子任务完成后统一处理结果
+                    while (jobs.size >= 4) {
+                        // 挂起当前协程，直到有任务完成才继续执行
+                        yield()
+                        jobs.removeAll { it.isCompleted }
+                    }
                 }
+                jobs.joinAll()
+
+                return@coroutineScope listenerObject
+                    ?: throw NotImplementedError("Cannot find $name,This may be because it does not exist or the parameter is wrong")
             }
 
-            listenerObject
-                ?: throw NotImplementedError("Cannot find $name,This may be because it does not exist or the parameter is wrong")
-
-            val eventChannel = GlobalEventChannel.parentScope(EventParentScopeType.parseEventScope(this.parentScope))
-            if (!this.readSubclassObjectName.contains("all")) {
+            val eventChannel = GlobalEventChannel.parentScope(EventParentScopeType.parseEventScope(parentScope))
+            if (!this@execute.readSubclassObjectName.contains("all")) {
                 if (listenerObject !is EventSubclassImpl<*>) {
                     startListener(listenerObject, eventChannel, yamlEventListener)
                     return
@@ -72,7 +91,8 @@ interface Listener {
                             if (this@startListener.provideEventAllValue) addTemplate(
                                 it,
                                 eventListener.template
-                            ) else mutableMapOf()
+                            ) else mutableMapOf(),
+                            it
                         )
                     },
                     priority = this.priority
@@ -89,7 +109,8 @@ interface Listener {
                             if (this@startListener.provideEventAllValue) addTemplate(
                                 it,
                                 eventListener.template
-                            ) else mutableMapOf()
+                            ) else mutableMapOf(),
+                            it
                         )
                     },
                     priority = this.priority
@@ -106,7 +127,8 @@ interface Listener {
                         if (this@startListener.provideEventAllValue) addTemplate(
                             it,
                             eventListener.template
-                        ) else mutableMapOf()
+                        ) else mutableMapOf(),
+                        it
                     )
                 }
             )
@@ -115,6 +137,7 @@ interface Listener {
         private suspend inline fun EventListener.executeRun(
             listenerObject: ListenerImpl<out Event>,
             values: MutableMap<String, Any>,
+            event: Event,
         ) {
             for (templateYML in run) {
                 if (templateYML.use == ImportType.EVENT) {
@@ -122,13 +145,19 @@ interface Listener {
                         ?: throw IllegalArgumentException("Cannot find function ${templateYML.call}")
                     val value = template.execute(templateYML.parameter)
                     values[templateYML.name] = value
-                } else {
-                    val args = templateYML.parameter.parseElement(values.mapCast())
-                    values[templateYML.name] = templateYML.use.getProjectClass().callValue(
-                        templateYML.call,
-                        args
-                    )
+                    continue
                 }
+                val args = templateYML.parameter.parseElement(values.mapCast())
+                val templateObj = templateYML.use.getProjectClass()
+                val serializerDataOrNull =
+                    templateObj::class.annotations.filterIsInstance<SerializerData>().firstOrNull()
+                if (serializerDataOrNull != null && event is MessageEvent) args.setValueByCommand(
+                    serializerDataOrNull, event
+                )
+
+                values[templateYML.name] = templateObj.call(
+                    templateYML.call, args
+                )
             }
         }
     }

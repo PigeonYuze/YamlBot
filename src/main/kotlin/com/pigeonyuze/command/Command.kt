@@ -9,6 +9,7 @@ import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Parameter.Companion.addAny
 import com.pigeonyuze.template.Parameter.Companion.removeFirst
+import com.pigeonyuze.template.TemplateUnits
 import com.pigeonyuze.template.asParameter
 import com.pigeonyuze.util.SerializerData
 import kotlinx.serialization.Serializable
@@ -164,6 +165,13 @@ sealed interface Command {
                 "Template: ${template::class.jvmName} name: ${template.name}"
             )
             var args = templateYML.parameter.parseElement(templateCall)
+            if (template is TemplateUnits) {
+                template.serializerDataArrayOrNull?.forEach {
+                    args = args.setValueByCommand(it, event)
+                }
+                return template.execute(args)
+            }
+
             val annotationList = template::class.annotations
             for (annotation in annotationList) {
                 if (annotation is SerializerData) {
@@ -173,6 +181,7 @@ sealed interface Command {
             return template.execute(args)
         }
 
+        @Suppress("FunctionName")
         private fun Command._initImpl() {
             val run by lazy { this.run }
             val name by lazy { this.name }
@@ -414,8 +423,7 @@ sealed interface Command {
 
             val args = /* Get values from native message*/
                 if (argsSplit.isEmpty() && argsSize == 1) {
-                    println("IT IS CAN BE NATIVE MSG")
-                    msg.asParameter()
+                    Parameter(listOf(msg))
                 } else msg.split(argsSplit).asParameter().removeFirst()
 
             LoggerManager.loggingDebug("ArgCommand-run", "Args from native message: $args")

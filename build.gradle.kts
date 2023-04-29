@@ -11,7 +11,7 @@ mirai {
 }
 
 group = "com.pigeonyuze"
-version = "1.6.0"
+version = "1.7.0"
 
 repositories {
     maven("https://maven.aliyun.com/repository/public")
@@ -19,8 +19,6 @@ repositories {
 }
 
 dependencies{
-    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
-//---remove    implementation("org.apache.logging.log4j:log4j-core:2.17.2")
     implementation("org.jetbrains.kotlin:kotlin-serialization:1.6.20")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
     // https://mvnrepository.com/artifact/io.github.kasukusakura/silk-codec

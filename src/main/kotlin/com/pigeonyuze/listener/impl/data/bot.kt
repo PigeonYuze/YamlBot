@@ -10,6 +10,8 @@ import com.pigeonyuze.listener.impl.Listener
 import com.pigeonyuze.listener.impl.ListenerImpl
 import com.pigeonyuze.listener.impl.template.EventTemplateValues
 import com.pigeonyuze.listener.impl.template.buildEventTemplate
+import net.mamoe.mirai.Bot
+import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.event.AbstractEvent
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.utils.MiraiInternalApi
@@ -45,6 +47,7 @@ internal interface BotEventListenerImpl<K> where K : BotEvent, K : AbstractEvent
                 "BotAvatarChangedEvent" -> BotAvatarChangedEventListener(template)
                 "BotNickChangedEvent" -> BotNickChangedEventListener(template)
                 "NudgeEvent" -> NudgeEventListener(template)
+                "SignEvent" -> SignEventListener(template)
                 else -> null
             }
         }
@@ -200,5 +203,21 @@ private class NudgeEventListener(template: MutableMap<String, Any>) : BaseListen
         template["subject"] = event.subject
         template["suffix"] = event.suffix
         template["action"] = event.action
+    }
+}
+
+private class SignEventListener(template: MutableMap<String, Any>) : BaseListenerImpl<SignEvent>(template),
+    BotEventListenerImpl<SignEvent> {
+    override val eventClass: KClass<SignEvent>
+        get() = SignEvent::class
+
+    override fun addTemplateImpl(event: SignEvent) {
+        super.addBaseBotTemplate(event, template)
+        template["sign"] = event.sign
+        template["hasRank"] = event.hasRank
+        template["user"] = event.user
+        template["isByBot"] = event.user is Bot
+        template["rank"] = event.rank ?: -1
+        template["isByGroup"] = event.user is Member
     }
 }

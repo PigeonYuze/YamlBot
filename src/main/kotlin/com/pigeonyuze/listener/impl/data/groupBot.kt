@@ -229,7 +229,7 @@ private class BotJoinGroupEventListener(template: MutableMap<String, Any>) :
     override fun findSubclass(name: String): ListenerImpl<out BotJoinGroupEvent> {
         return when (name) {
             "Active" -> subclassList[0]
-            "Kick" -> subclassList[1]
+            "Invite" -> subclassList[1]
             "Retrieve" -> subclassList[2]
             else -> throw NotImplementedError()
         }
