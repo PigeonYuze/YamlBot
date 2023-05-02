@@ -11,7 +11,9 @@ import com.pigeonyuze.template.TemplateImpl
 import com.pigeonyuze.template.parameterOf
 import com.pigeonyuze.util.FunctionArgsSize
 import com.pigeonyuze.util.SerializerData
+import com.pigeonyuze.util.TempFileManager
 import io.github.kasukusakura.silkcodec.AudioToSilkCoder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.filter
@@ -27,7 +29,6 @@ import net.mamoe.mirai.utils.ExternalResource
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import java.io.BufferedOutputStream
 import java.io.File
-import java.io.FileOutputStream
 import java.util.*
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
@@ -93,7 +94,7 @@ object MiraiTemplate : Template {
             override val name: String
                 get() = "upload"
 
-            private suspend fun upload(path: String, type: String, group: Long) : Message {
+            private suspend fun upload(path: String, type: String, group: Long): Message {
                 val settingType = when (type) {
                     "image" -> Image
                     "file" -> FileMessage
@@ -120,7 +121,7 @@ object MiraiTemplate : Template {
                 }
             }
 
-            private suspend fun upload(path: String, group: Long) : Message{
+            private suspend fun upload(path: String, group: Long): Message {
                 val fileType = when (path.substring(path.lastIndexOf("."))) {
                     "amr", "silk", "mp3", "wav" -> "audio"
                     "png", "jpg", "jpeg", "gif" -> "image"
@@ -129,21 +130,25 @@ object MiraiTemplate : Template {
                 return upload(path, fileType, group)
             }
 
-            private fun switchFileToSilk(externalResource: ExternalResource): ExternalResource {
-                if (externalResource.formatName in listOf("amr", "silk")) return externalResource
-                val path = "${YamlBot.dataFolderPath}/silk/${externalResource.md5}.silk"
-                if (File(path).exists()) return File(path).toExternalResource()
-                val threadPool = Executors.newCachedThreadPool()
-                val stream = AudioToSilkCoder(threadPool)
-                BufferedOutputStream(FileOutputStream(path)).use { fso ->
-                    stream.connect(
-                        "ffmpeg",
-                        externalResource.inputStream(),
-                        fso
+            private suspend fun switchFileToSilk(externalResource: ExternalResource): ExternalResource =
+                async(Dispatchers.IO) {
+                    if (externalResource.formatName in listOf("amr", "silk")) return@async externalResource
+                    val file = TempFileManager.silkTempDir.getFile(
+                        "${externalResource.md5}.silk"
                     )
-                }
-                return File(path).toExternalResource()
-            }
+                    if (file.exists()) return@async file.toExternalResource()
+                    val threadPool = Executors.newCachedThreadPool()
+                    val stream = AudioToSilkCoder(threadPool)
+                    BufferedOutputStream(file.outputStream()).use { fso ->
+                        stream.connect(
+                            "ffmpeg",
+                            externalResource.inputStream(),
+                            fso
+                        )
+                    }
+                    return@async file.toExternalResource()
+                }.await()
+
         }
 
         @FunctionArgsSize([1, 2])
@@ -156,6 +161,7 @@ object MiraiTemplate : Template {
                     else -> error(name, args.size)
                 }
             }
+
             override val type: KClass<Unit>
                 get() = Unit::class
             override val name: String
