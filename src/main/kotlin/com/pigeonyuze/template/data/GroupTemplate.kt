@@ -484,7 +484,7 @@ object GroupActiveTemplate : Template {
                             "isTitleVisible", "showTitle" -> this.isTitleVisible
                             "rankTitles" -> this.rankTitles
                             "temperatureTitles" -> this.temperatureTitles
-                            "thisChart", "chat" -> this.queryChart()
+                            "thisChart", "chart" -> this.queryChart()
                             "queryActiveRank", "thisRank" -> this.queryActiveRank()
                             else -> canNotFind(type, "GroupActive")
                         }
