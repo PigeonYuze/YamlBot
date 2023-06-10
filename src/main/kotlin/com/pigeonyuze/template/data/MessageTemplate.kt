@@ -1,8 +1,10 @@
 package com.pigeonyuze.template.data
 
+import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.TemplateImpl
+import com.pigeonyuze.template.TemplateImpl.Companion.canNotFind
 import com.pigeonyuze.util.SerializerData
 import com.pigeonyuze.util.SerializerData.SerializerType
 import com.pigeonyuze.util.listToStringDataToList
@@ -11,6 +13,8 @@ import net.mamoe.mirai.message.code.MiraiCode
 import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.message.data.Image.Key.queryUrl
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
+import net.mamoe.mirai.utils.MiraiExperimentalApi
+import net.mamoe.mirai.utils.MiraiInternalApi
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -34,6 +38,7 @@ object MessageTemplate : Template {
     override fun values(): List<TemplateImpl<*>> {
         return MessageTemplateImpl.list
     }
+
     sealed interface MessageTemplateImpl<K : Any> : TemplateImpl<K> {
 
         companion object {
@@ -49,6 +54,8 @@ object MessageTemplate : Template {
                 ReadDiceMessage,
                 CreateLightAppAndSend,
                 ReadMusicShare,
+                SendRockPaperScissors,
+                ReadRockPaperScissors,
                 //only read:
                 ReadAudio,
                 ReadImage
@@ -355,29 +362,43 @@ object MessageTemplate : Template {
             }
         }
 
-        /*
-        TODO: Light App Reader
+        @SerializerData(0, SerializerType.CONTACT)
+        object SendRockPaperScissors : MessageTemplateImpl<Unit> {
+            override val name: String
+                get() = "sendRockPaperScissors"
+            override val type: KClass<Unit>
+                get() = Unit::class
 
-        object ReadLightApp : MessageTemplateImpl<Any> {
+            override suspend fun execute(args: Parameter) {
+                val contact = args.getOrNull<Contact>(0) ?: throw IllegalArgumentException()
+                val msg = args.getOrNull(1)?.run { RockPaperScissors.valueOf(this) } ?: RockPaperScissors.random()
+                contact.sendMessage(msg)
+            }
+        }
+
+        object ReadRockPaperScissors : MessageTemplateImpl<Any> {
+            override val name: String
+                get() = "readRockPaperScissors"
             override val type: KClass<Any>
                 get() = Any::class
-            override val name: String
-                get() = "readLightApp"
 
+            @OptIn(MiraiExperimentalApi::class, MiraiInternalApi::class)
             override suspend fun execute(args: Parameter): Any {
-                val message = args.getMessage(0) as LightApp
-                val type = args[1]
-                if (type == "content") return message.content
-                val content = message.content
-
-                val isXmlContent = content.startsWith("<") && content.endsWith(">")
-                val getValue = args.subArgs(1)
-
-                return BaseTemplate.callValue(if (isXmlContent) "parseXml" else "parseJson",getValue.setFirst(content))
+                val msg = args.getOrNull<RockPaperScissors>(0) ?: throw IllegalArgumentException()
+                return when (args[1]) {
+                    "content" -> msg.content
+                    "name" -> msg.name
+                    "id" -> msg.id
+                    "internalId" -> msg.internalId
+                    "eliminates" -> {
+                        val otherRockPaper = args.getOrNull<RockPaperScissors>(2)
+                            ?: throw IllegalArgumentException("Getter `eliminates` needs other RockPaperScissors obj")
+                        (msg eliminates otherRockPaper) ?: NullObject
+                    }
+                    else -> canNotFind(args[1], "RockPaperScissors")
+                }
             }
-
         }
-        */
 
         //region 已经在 [MiraiTemplate] 中定义了上传与发送 只需要解析的信息类型
         object ReadImage : MessageTemplateImpl<Any> {

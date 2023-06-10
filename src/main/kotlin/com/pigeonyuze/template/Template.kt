@@ -1,7 +1,9 @@
 package com.pigeonyuze.template
 
 import com.pigeonyuze.YamlBot
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
 
 interface Template {
@@ -9,11 +11,20 @@ interface Template {
     /**
      *
      * */
-    suspend fun callValue(functionName: String, args: Parameter): Any
+    suspend fun callValue(functionName: String, args: Parameter): Any {
+        return findOrNull(functionName)!!.execute(args)
+    }
 
-    fun functionExist(functionName: String): Boolean
+    fun functionExist(functionName: String): Boolean {
+        return findOrNull(functionName) != null
+    }
 
-    fun findOrNull(functionName: String): TemplateImpl<*>?
+    fun findOrNull(functionName: String): TemplateImpl<*>? {
+        values().forEach {
+            if (it.name == functionName) return it
+        }
+        return null
+    }
 
     /**
      * function will not return null!
@@ -43,10 +54,13 @@ interface Template {
 }
 
 
-interface TemplateImpl<K : Any> {
+interface TemplateImpl<K : Any> : CoroutineScope {
     suspend fun execute(args: Parameter): K
     val type: KClass<out K>
     val name: String
+
+    override val coroutineContext: CoroutineContext
+        get() = CoroutineScope(YamlBot.coroutineContext).coroutineContext
 
     companion object {
         fun TemplateImpl<out Any>.canNotFind(what: String, where: String): Nothing {

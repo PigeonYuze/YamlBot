@@ -9,11 +9,13 @@ import com.pigeonyuze.template.TemplateImpl.Companion.nonImpl
 import com.pigeonyuze.template.parameterOf
 import com.pigeonyuze.test.Testable
 import com.pigeonyuze.util.*
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.active.ActiveChart
 import net.mamoe.mirai.contact.active.ActiveHonorInfo
 import net.mamoe.mirai.contact.active.ActiveHonorList
@@ -105,7 +107,8 @@ object GroupAnnouncementsTemplate : Template, Testable {
                 ReadFunction,
                 DeleteFunction,
                 ReadParameter,
-                ReadOnlineAnnouncement
+                ReadOnlineAnnouncement,
+                IsMemberReadAnnouncement
             )
 
 
@@ -242,10 +245,63 @@ object GroupAnnouncementsTemplate : Template, Testable {
                             "sender" -> this.sender ?: NullObject
                             "publicationTime", "time" -> this.publicationTime
                             "parameters" -> this.parameters
+                            "confirmedMember" -> this.members(true)
+                            "unconfirmedMember" -> this.members(false)
                             else -> canNotFind(next.toString(), "OnlineAnnouncement")
                         }
                     }
                 }
+            }
+        }
+
+        @SerializerData(0, SerializerData.SerializerType.CONTACT, true)
+        object IsMemberReadAnnouncement : GroupAnnouncementsTemplateImpl<Boolean> {
+            override val name: String
+                get() = "isMemberReadAnnouncement"
+            override val type: KClass<Boolean>
+                get() = Boolean::class
+
+
+            override suspend fun execute(args: Parameter): Boolean {
+                /* Get the announcement from arguments or throw NullPointerException */
+                val announcement = args.getOrNull<OnlineAnnouncement>(1) ?: args[1].run {
+                    args.getOrNull<Group>(0)!!.announcements.get(this)
+                        ?: throw NullPointerException("Cannot find announcements")
+                }
+
+                /* Get the member information from arguments */
+                val memberOrNull = args.getOrNull<Member>(2)
+                val memberIdOrNull = if (memberOrNull != null) null else args.getOrNull(2)?.toLong()
+
+                /* Check if all members have confirmed */
+                if (announcement.allConfirmed) {
+                    return true
+                }
+                /* Calculate the confirmed percentage to avoid unnecessary traversal */
+                val ratio = announcement.confirmedMembersCount.toDouble() / announcement.group.members.size
+                if (ratio > 0.65) {
+                    val result = async {
+                        announcement.members(false).forEach {  //unchecked
+                            if (memberOrNull == it || (memberIdOrNull != null && it.id == memberIdOrNull)) {
+                                return@async false
+                            }
+                        }
+                        true
+                    }.await()
+
+                    return result
+                }
+
+                val result = async {
+                    announcement.members(true).forEach {
+                        if (memberOrNull == it || (memberIdOrNull != null && it.id == memberIdOrNull)) {
+                            return@async true
+                        }
+                    }
+                    false
+                }.await()
+
+                return result
             }
         }
 
@@ -428,7 +484,7 @@ object GroupActiveTemplate : Template {
                             "isTitleVisible", "showTitle" -> this.isTitleVisible
                             "rankTitles" -> this.rankTitles
                             "temperatureTitles" -> this.temperatureTitles
-                            "thisChart", "chat" -> this.queryChart()
+                            "thisChart", "chart" -> this.queryChart()
                             "queryActiveRank", "thisRank" -> this.queryActiveRank()
                             else -> canNotFind(type, "GroupActive")
                         }

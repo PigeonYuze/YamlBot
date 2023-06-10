@@ -9,6 +9,7 @@ import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Parameter.Companion.addAny
 import com.pigeonyuze.template.Parameter.Companion.removeFirst
+import com.pigeonyuze.template.TemplateUnits
 import com.pigeonyuze.template.asParameter
 import com.pigeonyuze.util.SerializerData
 import kotlinx.serialization.Serializable
@@ -82,7 +83,7 @@ sealed interface Command {
             for (templateYML in run) {
                 LoggerManager.loggingDebug("Command-run", "Call ${templateYML.use}.${templateYML.call}")
                 LoggerManager.loggingTrace("Command-run", "Args: ${templateYML.args}")
-                val callFunction = callFunction(templateYML, event, templateCallName)
+                val callFunction = templateYML.objectTmp!!.execute(templateYML.parameter)
                 templateCallName[templateYML.name] = callFunction
                 LoggerManager.loggingTrace(
                     "Command-run",
@@ -164,6 +165,13 @@ sealed interface Command {
                 "Template: ${template::class.jvmName} name: ${template.name}"
             )
             var args = templateYML.parameter.parseElement(templateCall)
+            if (template is TemplateUnits) {
+                template.serializerDataArrayOrNull?.forEach {
+                    args = args.setValueByCommand(it, event)
+                }
+                return template.execute(args)
+            }
+
             val annotationList = template::class.annotations
             for (annotation in annotationList) {
                 if (annotation is SerializerData) {
