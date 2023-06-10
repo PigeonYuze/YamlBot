@@ -83,7 +83,7 @@ sealed interface Command {
             for (templateYML in run) {
                 LoggerManager.loggingDebug("Command-run", "Call ${templateYML.use}.${templateYML.call}")
                 LoggerManager.loggingTrace("Command-run", "Args: ${templateYML.args}")
-                val callFunction = callFunction(templateYML, event, templateCallName)
+                val callFunction = templateYML.objectTmp!!.execute(templateYML.parameter)
                 templateCallName[templateYML.name] = callFunction
                 LoggerManager.loggingTrace(
                     "Command-run",

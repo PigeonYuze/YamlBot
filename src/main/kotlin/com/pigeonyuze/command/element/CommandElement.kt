@@ -19,7 +19,7 @@ internal fun illegalArgument(
     throw CommandArgumentParserException(message, cause)
 
 @Serializable
-class Condition(
+data class Condition(
     @Comment("选择判断的类型 无需判断传值 none")
     val request: JudgmentMethod,
     @Comment("提供此处获取Boolean")
@@ -135,9 +135,12 @@ open class TemplateYML private constructor() {
              * @suppress Serializable transient
              * */
     var parameter = Parameter()
+        private set
 
     lateinit var args: List<String>
     lateinit var name: String
+
+    val objectTmp by lazy { use.getProjectClass().findOrNull(call) }
 
     constructor(
         use: ImportType,
@@ -160,13 +163,9 @@ open class TemplateYML private constructor() {
         call: String,
         args: Parameter,
         name: String,
-    ) : this() {
+    ) : this(use,call,args.stringValueList,name) {
         if (name.contains("%")) illegalArgument("${use.name}.${call}名称不应该含有 '%'")
         //region Init
-        this.name = name
-        this.use = use
-        this.call = call
-        this.args = args.stringValueList
         this.parameter = args
         //endregion
     }
