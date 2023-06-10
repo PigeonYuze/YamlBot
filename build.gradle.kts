@@ -13,6 +13,7 @@ mirai {
 group = "com.pigeonyuze"
 version = "1.7.0"
 
+
 repositories {
     maven("https://maven.aliyun.com/repository/public")
     mavenCentral()

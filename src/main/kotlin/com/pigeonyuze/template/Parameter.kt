@@ -2,7 +2,6 @@ package com.pigeonyuze.template
 
 import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.Command
-import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*

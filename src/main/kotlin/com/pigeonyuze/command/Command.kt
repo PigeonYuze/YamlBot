@@ -527,6 +527,7 @@ sealed interface Command {
          * 反之则返回`null`
          * */
         private inline fun <K> checkCommandName(checkNativeObj: String, shouldBe: String, run: () -> K): K? {
+            println("$checkNativeObj == $shouldBe , by $isPrefixForAll.")
             if (isPrefixForAll) {
                 if (checkNativeObj.startsWith(shouldBe)) {
                     return run.invoke()
