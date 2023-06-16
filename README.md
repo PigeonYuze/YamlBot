@@ -14,7 +14,7 @@
 在未来我们还会实现更多的内容！
 
 你可以将你的相关配置(如：`CommandReg.yml`) 以 `功能+原名`
-的方式上传到 [your config](https://github.com/PigeonYuze/YamlBot/tree/master/your-config)
+的方式上传到 [your config](./your-config)
 
 ### TODO
 
@@ -35,14 +35,21 @@
 
 ### 相关教程
 
-关于调用函数方面，你可以前往[TemplateDoc](https://github.com/PigeonYuze/YamlBot/blob/3d15eee0f68095835e8c9990029251941722d68d/docs/TemplateDoc.md)
+关于调用函数方面，你可以前往[TemplateDoc](./docs/TemplateDoc.md)
 获取帮助
 
 配置的说明，请可查看[configs](docs/config)下的内容
 
 除了`CommandReg`中展示的普通指令(`NormalCommand`)
-的创建说明，请查看[ArgCommandDoc](https://github.com/PigeonYuze/YamlBot/blob/3d15eee0f68095835e8c9990029251941722d68d/docs/ArgCommandDoc.md)
-与[OnlyRunCommandDoc](https://github.com/PigeonYuze/YamlBot/blob/3d15eee0f68095835e8c9990029251941722d68d/docs/OnlyRunCommandDoc.md)
+的创建说明，请查看[ArgCommandDoc](./docs/ArgCommandDoc.md)
+与[OnlyRunCommandDoc](./docs/OnlyRunCommandDoc.md)
+
+### 使用 Mirai 版本
+
+| `YamlBot` version | `mirai` version |
+|:-----------------:|:----------------|
+|  `1.0.0≤x<1.6.0`  | `2.13.4`        |
+|     `1.6.0≤x`     | `2.14.0`        |
 
 ### 示例
 
