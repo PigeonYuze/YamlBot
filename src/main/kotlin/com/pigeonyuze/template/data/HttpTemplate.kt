@@ -1,20 +1,21 @@
 package com.pigeonyuze.template.data
 
 import com.pigeonyuze.LoggerManager
-import com.pigeonyuze.YamlBot
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.TemplateImpl
 import com.pigeonyuze.template.parameterOf
 import com.pigeonyuze.util.FunctionArgsSize
+import com.pigeonyuze.util.TempFileManager
 import com.pigeonyuze.util.dropFirstAndLast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import java.io.File
 import java.io.FileOutputStream
 import java.net.URLEncoder
 import java.util.*
@@ -98,22 +99,27 @@ object HttpTemplate : Template {
                 }
             }
 
-            private fun downland(http: String): String {
-                return downland(http, "${YamlBot.dataFolderPath.resolve(http.hashCode().toString())}")
+            private suspend fun downland(http: String): String {
+                return downland(http, "${http.hashCode()}")
             }
 
 
-            private fun downland(http: String, saveName: String, param: Map<String, String>? = null): String {
+            private suspend fun downland(http: String, saveName: String, param: Map<String, String>? = null): String {
                 LoggerManager.loggingDebug(
                     "HttpTemplate-$name",
                     "Downland $http(param: ${param.toString()}) to $saveName"
                 )
-                if (File(saveName).exists()) return saveName
-                httpRequest(http, param).body!!.byteStream().use {
-                    val fileOutputStream = FileOutputStream(saveName)
-                    fileOutputStream.write(it.readAllBytes())
-                    fileOutputStream.flush()
-                    fileOutputStream.close()
+                val file = TempFileManager.downlandTemplateDir.getFile(
+                    saveName
+                )
+                if (file.exists()) return file.absolutePath
+                launch(Dispatchers.IO) {
+                    httpRequest(http, param).body!!.byteStream().use {
+                        val fileOutputStream = FileOutputStream(saveName)
+                        fileOutputStream.write(it.readAllBytes())
+                        fileOutputStream.flush()
+                        fileOutputStream.close()
+                    }
                 }
                 return saveName
             }

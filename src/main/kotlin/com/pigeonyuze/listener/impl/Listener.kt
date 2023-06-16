@@ -7,6 +7,11 @@ import com.pigeonyuze.listener.impl.ListenerImpl.Companion.addTemplate
 import com.pigeonyuze.listener.impl.data.*
 import com.pigeonyuze.util.SerializerData
 import com.pigeonyuze.util.mapCast
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
+import kotlinx.coroutines.*
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.EventChannel
 import net.mamoe.mirai.event.GlobalEventChannel
@@ -32,21 +37,33 @@ interface Listener {
         )
 
         suspend fun EventListener.execute(name: String = this.type) {
-            val yamlEventListener = this
-            var listenerObject: ListenerImpl<out Event>? = null
-            for (it in listeners) {
-                val obj: ListenerImpl<out Event>? = it.searchBuildListenerOrNull(name, this.template)
-                if (obj != null) {
-                    listenerObject = obj
-                    break
+            val yamlEventListener = this@execute
+            val listenerObject = coroutineScope {
+                val jobs: MutableList<Job> = mutableListOf()
+                var listenerObject: ListenerImpl<out Event>? = null
+                for (it in listeners) {
+                    jobs.add(launch {
+                        it.searchBuildListenerOrNull(name, template)?.also {obj: ListenerImpl<out Event> ->
+                            listenerObject = obj
+                            cancel()
+                        }
+                    })
+
+                    // 当达到最大协程数时，等待所有子任务完成后统一处理结果
+                    while (jobs.size >= 4) {
+                        // 挂起当前协程，直到有任务完成才继续执行
+                        yield()
+                        jobs.removeAll { it.isCompleted }
+                    }
                 }
+                jobs.joinAll()
+
+                return@coroutineScope listenerObject
+                    ?: throw NotImplementedError("Cannot find $name,This may be because it does not exist or the parameter is wrong")
             }
 
-            listenerObject
-                ?: throw NotImplementedError("Cannot find $name,This may be because it does not exist or the parameter is wrong")
-
-            val eventChannel = GlobalEventChannel.parentScope(EventParentScopeType.parseEventScope(this.parentScope))
-            if (!this.readSubclassObjectName.contains("all")) {
+            val eventChannel = GlobalEventChannel.parentScope(EventParentScopeType.parseEventScope(parentScope))
+            if (!this@execute.readSubclassObjectName.contains("all")) {
                 if (listenerObject !is EventSubclassImpl<*>) {
                     startListener(listenerObject, eventChannel, yamlEventListener)
                     return

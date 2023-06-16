@@ -65,11 +65,11 @@ private class GroupEntranceAnnouncementChangeEventListener(template: MutableMap<
     BaseListenerImpl<GroupEntranceAnnouncementChangeEvent>(template) {
     override val eventClass: KClass<GroupEntranceAnnouncementChangeEvent>
         get() {
-            LoggerManager.loggingWarn(
+            LoggerManager.loggingError(
                 "GroupEntranceAnnouncementChangeEvent-class-getter",
                 "This event is not being triggered anymore."
             )
-            return GroupEntranceAnnouncementChangeEvent::class
+            throw RuntimeException("Cannot get class object of GroupEntranceAnnouncementChangeEvent!")
         }
 
     override fun addTemplateImpl(event: GroupEntranceAnnouncementChangeEvent) {
