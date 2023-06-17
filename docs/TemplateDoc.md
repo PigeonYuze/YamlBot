@@ -9,6 +9,8 @@
 - [MiraiTemplate](./template/MiraiTemplate.md)
 - [UserTemplate](./template/UserTemplate.md)
 - [MessageManagerTemplate](./template/MessageManagerTemplate.md)
+- [ReflectionTemplate](./template/ReflectionTemplate.md)
+- [RoamingTemplate](./template/RoamingTemplate.md)
 
 在调用一个`Template`的参数列表中，默认是以`yaml`配置中的字符串进行传递的
 
