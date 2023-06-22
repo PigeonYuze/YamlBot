@@ -1,0 +1,48 @@
+# 一言 (hikokoto) 示例文件
+# 此处示例为 NormalCommand 的基础使用
+# @see [YamlBot](https://github.com/PigeonYuze/YamlBot/)
+# 以下写法仅适用于 v2.0.0 以后的 `commands` 配置文件夹
+
+# 声明可调用名称 用户发送的信息需要与此完全相同才可触发指令
+name: ['#一言','/hikokoto']
+
+# 回复信息的方式 可选以下值
+# QUOTE - 引用回复信息
+# SEND_MESSAGE - 直接发送信息
+# AT_SEND - At 触发指令者 并 直接发送信息
+answeringMethod: 'QUOTE'
+
+# 回复的功能，建议使用'\n换行'
+# 可使用 %call-名称% 作为占位符，获取在`run`中定义的常量
+answerContent: '『 %call-hitokoto% 』 —— %call-from%'
+
+# 条件控制语句，你可以直接不提供该值（无条件）
+condition: []
+
+# 运行指令时首先执行的操作, 同样的，你可以不提供此项
+run:
+  # 调用 http 模块发送一个 post 请求并获取内容信息
+  - use: HTTP # 声明调用的是 http 模块
+    call: content # 声明调用的函数为 HTTP 模块中的 `content` 函数
+    args: # 传递的参数
+      - 'https://v1.hitokoto.cn'
+    name: content # 对于本次操作得到的结果的命名，其他处可以根据此内容直接调用
+
+  # 通过 base 模块内置的解析 json 功能获取对应的操作
+  - use: BASE # 声明调用库
+    call: parseJson # 声明调用函数
+    args: # 传递的参数
+      - '%call-content%' # 此处使用占位符，运行时使用`content`的值代替
+      - hitokoto
+    name: hitokoto
+
+  - use: BASE
+    call: parseJson
+    args:
+      - '%call-content%'
+      - from
+    name: from
+
+# 以上就是一个简单的 NormalCommand 示例
+# 除此之外， YamlBot 还支持有别的指令类型如 `ArgCommand` `OnlyRunCommand`
+# 详见文档 https://github.com/PigeonYuze/YamlBot/blob/aa6e1b52ca173ddf962947fbaaa2ee4509ada51b/docs/config/CommandReg.md

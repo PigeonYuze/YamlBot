@@ -14,6 +14,8 @@ import net.mamoe.mirai.event.events.MessageEvent
 
 val runningBots: MutableList<Bot> = mutableListOf()
 
+internal var isDebugging0 = false
+
 object YamlBot : KotlinPlugin(
     JvmPluginDescription(
         id = "com.pigeonyuze.yaml-bot",
@@ -29,10 +31,8 @@ object YamlBot : KotlinPlugin(
         logger.info("start init")
         runConfigsReload()
 
-        for (command in CommandConfigs.COMMAND) {
-            commandList.add(command.value)
-        }
-
+        commandList.clear()
+        commandList.addAll(Command.commands)
 
         val parentScope = GlobalEventChannel.parentScope(this)
 
@@ -52,6 +52,7 @@ object YamlBot : KotlinPlugin(
         }
 
     }
+
 }
 
 object BotsTool {

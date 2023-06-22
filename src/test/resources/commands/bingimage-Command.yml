@@ -1,0 +1,47 @@
+
+-
+  name:
+    - 每日一图
+    - bing一图
+    - '/image bing'
+  answeringMethod: QUOTE
+  answerContent: '『%call-name%』%call-image%\n%call-from%'
+  run:
+    - use: HTTP
+      call: content
+      args:
+        - 'https://api.xygeng.cn/bing/'
+      name: content
+    - use: BASE
+      call: parseJson
+      args:
+        - '%call-content%'
+        - data
+        - title
+      name: name
+    - use: BASE
+      call: parseJson
+      args:
+        - '%call-content%'
+        - data
+        - url
+      name: downlandUrl
+    - use: BASE
+      call: parseJson
+      args:
+        - '%call-content%'
+        - data
+        - copyright
+      name: from
+    - use: HTTP
+      call: downland
+      args:
+        - '%call-downlandUrl%'
+      name: imagePath
+    - use: MIRAI
+      call: upload
+      args:
+        - '%call-imagePath%'
+        - image
+      name: image
+  condition: [ ]

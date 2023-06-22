@@ -2,11 +2,6 @@ package com.pigeonyuze
 
 import com.pigeonyuze.YamlBot.reload
 import com.pigeonyuze.account.UserElement
-import com.pigeonyuze.command.Command
-import com.pigeonyuze.command.Command.*
-import com.pigeonyuze.command.YamlCommandDecoder
-import com.pigeonyuze.command.YamlCommandDecoder.load
-import com.pigeonyuze.command.element.AnsweringMethod
 import com.pigeonyuze.command.element.ImportType
 import com.pigeonyuze.command.element.TemplateYML
 import com.pigeonyuze.listener.EventListener
@@ -14,19 +9,48 @@ import com.pigeonyuze.listener.YamlEventListenerDecoder
 import com.pigeonyuze.listener.YamlEventListenerDecoder.load
 import com.pigeonyuze.listener.impl.Listener.Companion.execute
 import com.pigeonyuze.template.parameterOf
+import com.pigeonyuze.util.decode.CommandConfigDecoder
+import com.pigeonyuze.util.logger.BeautifulError
+import com.sksamuel.hoplite.ConfigLoaderBuilder
 import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.ValueDescription
 import net.mamoe.mirai.console.data.value
+import java.io.File
 
 
 fun runConfigsReload() {
     runBlocking {
         UserConfig.reload()
-        CommandConfigs.load()
+        readCommands()
         LoggerConfig.reload()
         ListenerConfigs.load()
         ListenerConfigs.startAllListener()
+    }
+}
+
+private fun readCommands() {
+    val codes = YamlBot.configFolderPath.resolve("commands").toFile()
+    if (!codes.exists()) {
+        File(YamlBot::class.java.getResource("default_files/commands")!!.file)
+            .copyRecursively(codes, true) { _, e ->
+                LoggerManager.loggingError(e)
+                OnErrorAction.SKIP
+            }
+        LoggerManager.loggingWarn(
+            "[read-commands]",
+            "No commands in 'config/commands' found! To init with default values and create default files."
+        )
+    }
+    require(codes.isDirectory) { "Error: File $codes must be a directory" }
+    val configLoader = ConfigLoaderBuilder.default().build()
+    for (code in codes.list()!!) {
+        try {
+            CommandConfigDecoder.handle(configLoader.loadNodeOrThrow(code))
+        }catch (e: BeautifulError) {
+            LoggerManager.loggingError(e)
+            continue
+        }
     }
 }
 
@@ -95,62 +119,12 @@ object UserConfig : AutoSavePluginConfig("UserConfig") {
         
         备注： 如果你想调用该项 请使用%value-${'$'}name% 如： %value-regDate%
         该项依赖反射以运行 可能会带来初始化时性能上的损失
-    """)
-    val otherElements : MutableList<UserElement> by value(mutableListOf(UserElement("regDate","date","new")))
-
-}
-
-@kotlinx.serialization.Serializable
-/**
- * 对[Command]的包装 由此实现序列化的多态化
- * */
-internal class CommandPolymorphism(
-    val value: Command
-)
-
-internal fun Command.toPolymorphismObject() = CommandPolymorphism(this)
-
-@ValueDescription("指令注册")
-object CommandConfigs : AutoSavePluginConfig(YamlCommandDecoder.saveName){
-    @ValueDescription("指令处理")
-    internal var COMMAND: List<CommandPolymorphism> by value(
-        listOf(
-            NormalCommand(
-                name = listOf("test"),
-                answeringMethod = AnsweringMethod.QUOTE,
-                answerContent = """
-                hello,world!
-                this is a test message!
-            """.trimIndent(),
-                run = listOf(),
-            ).toPolymorphismObject(),
-            NormalCommand(
-                name = listOf("/hikokoto"),
-                answeringMethod = AnsweringMethod.QUOTE,
-                answerContent = "『 %call-hitokoto% 』 —— %call-from%",
-                run = listOf(TemplateYML(ImportType.HTTP, "content",
-                    listOf("https://v1.hitokoto.cn"), name = "content"),
-                    TemplateYML(ImportType.BASE,"parseJson", listOf("%call-content%","hitokoto"),"hitokoto"),
-                    TemplateYML(ImportType.BASE,"parseJson", listOf("%call-content%","from"),"from")
-                ),
-            ).toPolymorphismObject(),
-            OnlyRunCommand(
-                name = listOf("/run"),
-                condition = listOf(),
-                run = listOf()
-            ).toPolymorphismObject(),
-            ArgCommand(
-                name = listOf("/arg"),
-                answeringMethod = AnsweringMethod.QUOTE,
-                answerContent = "『 %call-arg1% 』 —— %call-arg2%",
-                argsSize = 2,
-                condition = listOf(),
-                run = listOf()
-            ).toPolymorphismObject()
-        )
-
+    """
     )
+    val otherElements: MutableList<UserElement> by value(mutableListOf(UserElement("regDate", "date", "new")))
+
 }
+
 
 object ListenerConfigs : AutoSavePluginConfig(YamlEventListenerDecoder.saveName) {
     internal var listener: List<EventListener> by value(

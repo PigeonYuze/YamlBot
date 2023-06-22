@@ -2,19 +2,20 @@ package com.pigeonyuze.template
 
 import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.Command
+import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.command.element.illegalArgument
 import com.pigeonyuze.util.*
 import com.pigeonyuze.util.SerializerData.SerializerType.*
+import com.sksamuel.hoplite.ArrayNode
+import com.sksamuel.hoplite.MapNode
+import com.sksamuel.hoplite.PrimitiveNode
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.events.FriendEvent
 import net.mamoe.mirai.event.events.GroupEvent
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
-import net.mamoe.yamlkt.YamlList
-import net.mamoe.yamlkt.YamlLiteral
-import net.mamoe.yamlkt.YamlMap
-import net.mamoe.yamlkt.YamlNull
+
 
 @Suppress("UNUSED")
 class Parameter constructor() {
@@ -47,9 +48,9 @@ class Parameter constructor() {
         get() = value.size
 
     //region Add function
-    fun add(yamlMap: YamlMap) {
-        value.add(yamlMap.toAnyOrNull() as Map<*, *>)
-        _stringValue.add(yamlMap.toString())
+    fun add(map: MapNode) {
+        value.add(map.map)
+        _stringValue.add(map.toString())
     }
 
     fun add(message: Message) {
@@ -57,14 +58,14 @@ class Parameter constructor() {
         _stringValue.add(message.contentToString())
     }
 
-    fun add(yamlList: YamlList) {
-        value.add(yamlList.toAnyOrNull() as List<*>)
-        _stringValue.add(yamlList.toString())
+    fun add(node: ArrayNode) {
+        value.add(node.elements)
+        _stringValue.addAll(node.elements.map { it.toString() })
     }
 
-    fun add(yamlLiteral: YamlLiteral) {
-        value.add(yamlLiteral.content)
-        _stringValue.add(yamlLiteral.content)
+    fun add(node: PrimitiveNode) {
+        value.add(node.value ?: NullObject)
+        _stringValue.add(node.value.toString())
     }
 
     fun add(string: String) {
@@ -450,18 +451,6 @@ fun parameterOf(vararg element: Any): Parameter {
     return Parameter(element)
 }
 
-fun YamlList.asParameter(): Parameter {
-    val parameter = Parameter()
-    for (element in this) {
-        when (element) {
-            is YamlMap -> parameter.add(element)
-            is YamlLiteral -> parameter.add(element)
-            YamlNull -> parameter.add("null")
-            is YamlList -> parameter.add(element)
-        }
-    }
-    return parameter
-}
 
 fun List<String>.asParameter(): Parameter {
     return Parameter(this)

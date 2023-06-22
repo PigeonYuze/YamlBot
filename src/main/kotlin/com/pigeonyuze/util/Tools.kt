@@ -1,9 +1,5 @@
 package com.pigeonyuze.util
 
-import net.mamoe.yamlkt.YamlElement
-import net.mamoe.yamlkt.YamlList
-import net.mamoe.yamlkt.YamlMap
-import net.mamoe.yamlkt.YamlPrimitive
 import kotlin.reflect.KClass
 
 
@@ -117,24 +113,7 @@ fun List<*>.stringList() : MutableList<String>{
 }
 
 
-fun YamlElement.toAnyOrNull() : Any? =
-    when(this){
-        is YamlPrimitive -> this.content
-        is YamlMap -> {
-            val anyMap = mutableMapOf<Any,Any?>()
-            for ((key,value) in this.content){
-                anyMap[key.toAnyOrNull()!!] = value.toAnyOrNull()
-            }
-            anyMap
-        }
-        is YamlList -> {
-            val anyList = mutableListOf<Any?>()
-            for (value in this.content) {
-                anyList.add(value.toAnyOrNull())
-            }
-            anyList
-        }
-    }
+
 
 fun String.isLong() = this.toLongOrNull() != null
 

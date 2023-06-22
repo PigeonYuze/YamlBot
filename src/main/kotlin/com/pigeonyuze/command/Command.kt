@@ -20,49 +20,39 @@ import net.mamoe.mirai.message.code.MiraiCode
 import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.message.data.MessageSource.Key.quote
 import net.mamoe.mirai.message.nextMessageOrNull
-import net.mamoe.yamlkt.Comment
 import kotlin.reflect.jvm.jvmName
 
 @Serializable
 sealed interface Command {
-    @Comment("指令的全称 使用者在发出该内容后会触发指令 (使用contentToString比较)")
     val name: List<String>
 
-    @Comment(
-        """
-        回复的方式 可选为QUOTE,SEND_MESSAGE,AT_SEND
-        QUOTE 为回复信息
-        SEND_MESSAGE 为直接发送信息
-        AT_SEND 为at发送者后发送信息
-    """
-    )
     val answeringMethod: AnsweringMethod
 
-    @Comment(
-        """
-        回答的内容
-        可提供%call-value%调用参数 (详细可见 readme.md 所标注的方法)
-    """
-    )
+//    @Comment(
+//        """
+//        回答的内容
+//        可提供%call-value%调用参数 (详细可见 readme.md 所标注的方法)
+//    """
+//    )
     val answerContent: String
 
-    @Comment(
-        """
-        会同时执行的操作 如有需要调用参数 需要在此处进行编写
-        详细可见 readme.md
-    """
-    )
+//    @Comment(
+//        """
+//        会同时执行的操作 如有需要调用参数 需要在此处进行编写
+//        详细可见 readme.md
+//    """
+//    )
     val run: List<TemplateYML>
 
-    @Comment(
-        """
-        运行还需要的额外条件(该项暂时没有用 因为还没有写好的返回布尔值的内容)
-        若无需条件请使用以下内容：
-        - request: none
-          call: null
-          runRequest: false
-    """
-    )
+//    @Comment(
+//        """
+//        运行还需要的额外条件(该项暂时没有用 因为还没有写好的返回布尔值的内容)
+//        若无需条件请使用以下内容：
+//        - request: none
+//          call: null
+//          runRequest: false
+//    """
+//    )
     val condition: List<Condition>
 
     val templateCallName: MutableMap<String, Any?>
@@ -75,6 +65,10 @@ sealed interface Command {
     }
 
     companion object {
+
+        var commands = listOf<Command>()
+            internal set
+
         private suspend fun Command.runImpl(event: MessageEvent, templateCallName: MutableMap<String, Any?>) {
             LoggerManager.loggingDebug("Command-run", "Start run command.....")
             LoggerManager.loggingTrace("Command-run", "Judgment running condition.")
@@ -392,6 +386,15 @@ sealed interface Command {
 
                 override fun switchType(context: Message): Any {
                     return context as Audio
+                }
+            },
+            NOTHING {
+                override fun checkType(context: Message): Boolean {
+                    return false
+                }
+
+                override fun switchType(context: Message): Any {
+                    return context
                 }
             }
 
