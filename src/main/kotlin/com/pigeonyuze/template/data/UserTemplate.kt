@@ -1,6 +1,6 @@
 package com.pigeonyuze.template.data
 
-import com.pigeonyuze.UserConfig
+import com.pigeonyuze.util.setting.UserConfig
 import com.pigeonyuze.UserData
 import com.pigeonyuze.account.User
 import com.pigeonyuze.template.Parameter

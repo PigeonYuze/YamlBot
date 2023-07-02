@@ -1,5 +1,6 @@
 package com.pigeonyuze
 
+import com.pigeonyuze.util.setting.LoggerConfig
 import kotlinx.coroutines.*
 import net.mamoe.mirai.message.data.ForwardMessageBuilder
 import net.mamoe.mirai.message.data.PlainText

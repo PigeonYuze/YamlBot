@@ -45,6 +45,11 @@ sealed class ErrorTrace {
             by lazy { "Function '${error.stackTrace[0].methodName}' throws error(${error::class.simpleName}: '${error.message}')" }
     }
 
+    data class CannotParseAsAnyone(override val trace: Pos,private val cause: String): ErrorTrace() {
+        override val errorTraceString: String
+            by lazy { "Can not parse to any objects, because: $cause" }
+    }
+
     class WrongYamlTypeError(override val trace: Pos,private val readingObj: String,private val name: String,private vararg val shouldBe: String): ErrorTrace() {
         override fun toString(): String {
             return "WrongYamlTypeError(trace=$trace,readingObj=$readingObj,name=$name,shouldBe=${shouldBe.contentToString()})"

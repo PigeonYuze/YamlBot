@@ -1,6 +1,5 @@
 package com.pigeonyuze.util.decode
 
-import com.pigeonyuze.LoggerManager
 import com.pigeonyuze.command.Command
 import com.pigeonyuze.command.Command.*
 import com.pigeonyuze.command.element.AnsweringMethod
@@ -15,7 +14,7 @@ import com.pigeonyuze.util.logger.ErrorTrace
 import com.pigeonyuze.util.logger.ErrorType
 import com.sksamuel.hoplite.*
 import com.sksamuel.hoplite.fp.Validated
-import com.sksamuel.hoplite.fp.invalid
+import com.sksamuel.hoplite.fp.valid
 import kotlinx.coroutines.launch
 
 /**
@@ -33,7 +32,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
     override fun handle(objects: ArrayList<Command>) {
         if (isDebugging0) {
             println(objects)
-        }else {
+        } else {
             Command.commands = objects
         }
     }
@@ -65,146 +64,99 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
      *
      * - Else, it will throw [BeautifulError]
      * */
-    private fun normalCommandOrOnlyRunCommand(mapping: MapNode): Command {
-        val commandCallerErr =
-            BeautifulError(
-                errorType = ErrorType.RUNNING_FUNCTION,
-                errorAbout = ErrorAbout.ByInstance("NormalCommand & OnlyRunCommand")
-            )
-        var failedRun = false
-        var isOnlyRun = false
-        val run = mapping[runFieldName].checkType<ArrayNode>(runFieldName, mapping)
-            .checkCauseMissing(commandCallerErr) {
-                byDefaultLogger(it, runFieldName, templateCallerFieldName)
-                failedRun = true
-            }
-            .transformOrDefault(defaultValue = listOf(), transform = { array ->
-                array.elements.map { it.decodeToTemplateYaml() }
-            })
-        val condition = mapping[conditionFieldName].checkType<ArrayNode>(conditionFieldName, mapping)
-            .checkCauseMissing(commandCallerErr) { byDefaultLogger(it, conditionFieldName, conditionObjectFieldName)  }
-            .transformOrDefault(defaultValue = listOf(), transform = { array ->
-                array.elements.map { it.decodeToCondition() }
-            })
-        val name0 = mapping[nameFieldName].checkType<ArrayNode>(nameFieldName, mapping) byThrow commandCallerErr
-        // For normalCommand, if it cannot find,will parse to OnlyRunData
-        val answeringMethod0 =
-            mapping[answeringMethodFieldName].checkType<StringNode>(answeringMethodFieldName, mapping)
-                .checkCauseMissing(commandCallerErr) {
-                    LoggerManager.loggingWarn(
-                        "Parse-NormalCommand",
-                        "Missing parameter: '$answeringMethodFieldName', Automatically parse by OnlyRunCommand"
-                    )
-                    isOnlyRun = true
-                }
-                .transformOrDefault(defaultValue = AnsweringMethod.SEND_MESSAGE.invalid(), transform = {
-                it.decodeToEnum(AnsweringMethod.values()) byThrow commandCallerErr
-            })
-        val answerContent =
-            mapping[answerContentField].checkType<StringNode>(answerContentField, mapping)
-                .checkCauseMissing(commandCallerErr) {
-                    LoggerManager.loggingWarn(
-                        "Parse-NormalCommand",
-                        "Missing parameter: '$answerContentField', Automatically parse by OnlyRunCommand"
-                    )
-                    isOnlyRun = true
-                }
-                .transformOrDefault(defaultValue = "", transform = {
-                // Decoding to OnlyRunCommand
-                it.value
-            })
-        if (isOnlyRun xor failedRun) {
-            commandCallerErr.addCause(
-                ErrorTrace.MissingParameter(mapping.pos, runFieldName),
-            )
-        }
+    private fun normalCommandOrOnlyRunCommand(mapping: MapNode): Command =
+        parseBuilder("Command & OnlyRunCommand", mapping) {
+            var failedRun = false
+            var isOnlyRun = false
 
-        commandCallerErr.isEmpty() || throw commandCallerErr
-        val name = name0.unsafeByThrow().elements.map {
-            it.checkType<StringNode>("<name-element>").unsafeByThrow().value
-        }
-        return if (isOnlyRun) {
-            OnlyRunCommand(
-                name = name,
-                run = run,
-                condition = condition
+            val name0 = get<ArrayNode>(nameFieldName)
+            val run0 = get<ArrayNode>(runFieldName, true)
+                .onFailure { failedRun = true }
+            val condition0 = get<ArrayNode>(conditionFieldName, true)
+            // For normalCommand, these are unfounded,will parse to OnlyRunData
+            val answeringMethod0 = get<StringNode>(answeringMethodFieldName, true)
+                .onFailure { isOnlyRun = true }
+            val answerContent = get<StringNode>(answerContentField, true)
+                .onFailure { isOnlyRun = true }
+            if (isOnlyRun xor failedRun) {
+                throw parsingError.addCause(
+                    ErrorTrace.CannotParseAsAnyone(
+                        mapping.pos,
+                        "Unable to determine the type. Missing fields"
+                    )
+                )
+            }
+            val answeringMethod =
+                answeringMethod0(AnsweringMethod.SEND_MESSAGE.valid()) { it.decodeToEnum(AnsweringMethod.values()) }
+
+            checkError()
+
+            val run = run0.invoke(listOf()) { array ->
+                array.elements.map { it.decodeToTemplateYaml() }
+            }
+            val condition = condition0(listOf()) { array ->
+                array.elements.map { it.decodeToCondition() }
+            }
+            val name = name0.invoke().toStringList(nameFieldName)
+            return@parseBuilder if (isOnlyRun) OnlyRunCommand(
+                name, run, condition
+            ) else NormalCommand(
+                name, answeringMethod.invoke(), answerContent.invoke { it.value }, run, condition
             )
-        } else NormalCommand(
-            name = name,
-            run = run,
-            condition = condition,
-            answerContent = answerContent,
-            answeringMethod = answeringMethod0.getUnsafe()
-        )
-    }
+        }
 
     /**
      * Parsed as an ArgCommand object
      * @return It will return parsed object. If node **missing** `argSize`, it will return `null`
      * */
-    private fun argCommand(mapping: MapNode): ArgCommand? {
-        val commandCallerErr: BeautifulError by lazy {
-            BeautifulError(
-                errorType = ErrorType.RUNNING_FUNCTION,
-                errorAbout = ErrorAbout.ByInstance("ArgCommand")
+    private fun argCommand(mapping: MapNode): ArgCommand? =
+        parseBuilder("ArgCommand", mapping) {
+            val argSize = mapping[argSizeFieldName].checkType<LongNode>(argSizeFieldName).onFailureInline {
+                return@parseBuilder null
+            }.getUnsafe().value.toInt()
+
+            val name0 = get<ArrayNode>(nameFieldName)
+            val answeringMethod0 = get<StringNode>(answeringMethodFieldName)
+            val answerContent0 = get<StringNode>(answerContentField)
+            /* Default value */
+            val condition0 = get<ArrayNode>(conditionFieldName, true)
+            val run0 = get<ArrayNode>(runFieldName, true)
+            val isPrefixForAll0 = get<BooleanNode>(isPrefixForAllFieldName, true)
+            val argsSplit0 = get<StringNode>(argsSplitFieldName, true)
+            val useLaterAddParams0 = get<BooleanNode>(useLaterAddParamsField, true)
+            val laterAddParamsTimeoutSecond0 = get<LongNode>(timeoutSecondFieldName, true)
+            val request0 = get<MapNode>(requestFieldName, true)
+            val describe0 = get<MapNode>(describeFieldName, true)
+
+            checkError()
+            val name = name0.unsafeByThrow().toStringList(nameFieldName)
+            val answeringMethod =
+                answeringMethod0.unsafeByThrow().decodeToEnum(AnsweringMethod.values()).unsafeByThrow()
+            return@parseBuilder ArgCommand(
+                name = name,
+                answeringMethod = answeringMethod,
+                answerContent = answerContent0.unsafeByThrow().value,
+                run = run0(listOf()) { elements ->
+                    elements.elements.map { it.decodeToTemplateYaml() }
+                },
+                condition = condition0(listOf()) { elements ->
+                    elements.elements.map { it.decodeToCondition() }
+                },
+                argsSplit = argsSplit0(" ") { it.value },
+                useLaterAddParams = useLaterAddParams0(true) { it.value },
+                laterAddParamsTimeoutSecond = laterAddParamsTimeoutSecond0(60) { it.value.toInt() },
+                argsSize = argSize,
+                request = request0(mapOf()) { node ->
+                    implToArgCommandRequest(node, parsingError)
+                },
+                describe = describe0(mapOf()) { node ->
+                    node.map
+                        .mapKeys { it.key.toInt() }
+                        .mapValues { it.value.checkType<StringNode>("<$describeFieldName-elements>").invoke().value }
+                },
+                isPrefixForAll = isPrefixForAll0(true) { it.value }
             )
         }
-        val argSize = mapping[argSizeFieldName].checkType<LongNode>(argSizeFieldName).onFailureInline {
-            return null
-        }.getUnsafe().value.toInt()
-        val name0 = mapping[nameFieldName].checkType<ArrayNode>(nameFieldName,mapping) byThrow commandCallerErr
-        val answeringMethod0 =
-            mapping[answeringMethodFieldName].checkType<StringNode>(answeringMethodFieldName,mapping) byThrow commandCallerErr
-        val answerContent0 =
-            mapping[answerContentField].checkType<StringNode>(answerContentField,mapping) byThrow commandCallerErr
-        /* Default value */
-        val condition = mapping[conditionFieldName].checkType<ArrayNode>(conditionFieldName,mapping)
-            .checkCauseMissing(commandCallerErr) { byDefaultLogger(it, conditionFieldName, conditionObjectFieldName) }
-            .transformOrDefault(defaultValue = listOf(), transform = { array ->
-                array.elements.map { it.decodeToCondition() }
-            })
-        val run = mapping[runFieldName].checkType<ArrayNode>(runFieldName,mapping)
-            .checkCauseMissing(commandCallerErr) { byDefaultLogger(it, runFieldName, templateCallerFieldName) }
-            .transformOrDefault(defaultValue = listOf(), transform = { array ->
-                array.elements.map { it.decodeToTemplateYaml() }
-            })
-        val isPrefixForAll = mapping[isPrefixForAllFieldName].checkType<BooleanNode>(isPrefixForAllFieldName,mapping)
-            .transformOrDefault(defaultValue = true, transform = { it.value })
-        val argsSplit = mapping[argsSplitFieldName].checkType<StringNode>(argsSplitFieldName)
-            .transformOrDefault(transform = { it.value }, " ")
-        val useLaterAddParams = mapping[useLaterAddParamsField].checkType<BooleanNode>(useLaterAddParamsField,mapping)
-            .transformOrDefault(transform = { it.value }, true)
-        val laterAddParamsTimeoutSecond = mapping[timeoutSecondFieldName].checkType<LongNode>(timeoutSecondFieldName,mapping)
-            .transformOrDefault(transform = { it.value.toInt() }, 60)
-        val request = mapping[requestFieldName].checkType<MapNode>(requestFieldName,mapping)
-            .transformOrDefault(transform = { node ->
-                implToArgCommandRequest(node, commandCallerErr)
-            }, defaultValue = mapOf())
-        val describe = mapping[describeFieldName].checkType<MapNode>(describeFieldName,mapping)
-            .transformOrDefault(transform = { node ->
-                node.map
-                    .mapKeys { it.key.toInt() }
-                    .mapValues { it.value.checkType<StringNode>("<$describeFieldName-elements>").unsafeByThrow().value }
-            }, mapOf())
-        commandCallerErr.isEmpty() || throw commandCallerErr
-        val name = name0.unsafeByThrow().toStringList(nameFieldName)
-        val answeringMethod = answeringMethod0.unsafeByThrow().decodeToEnum(AnsweringMethod.values()).unsafeByThrow()
-        return ArgCommand(
-            name = name,
-            answeringMethod = answeringMethod,
-            answerContent = answerContent0.unsafeByThrow().value,
-            run = run,
-            condition = condition,
-            argsSplit = argsSplit,
-            useLaterAddParams = useLaterAddParams,
-            laterAddParamsTimeoutSecond = laterAddParamsTimeoutSecond,
-            argsSize = argSize,
-            request = request,
-            describe = describe,
-            isPrefixForAll = isPrefixForAll
-        )
-    }
-
 
     //////////////////////////
     // Field Names          //
@@ -233,7 +185,8 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
     private fun implToArgCommandRequest(
         node: MapNode,
         commandCallerErr: BeautifulError,
-    ) = node.map.mapKeys { it.key.toInt() }
+    ) = node.map
+        .mapKeys { it.key.toInt() }
         .mapValues {
             when (val value = it.value.checkType<StringNode>("<$requestFieldName.elements>").unsafeByThrow().value) {
                 "double" -> ArgCommand.Type.DOUBLE
@@ -264,45 +217,32 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
             }
         }
 
-    private fun Node.decodeToTemplateYaml(): TemplateYML {
-        val templateCallerErr =
-            BeautifulError(
-                errorType = ErrorType.RUNNING_FUNCTION,
-                errorAbout = ErrorAbout.ByInstance("TemplateCaller")
+    private fun Node.decodeToTemplateYaml(): TemplateYML =
+        parseBuilder(
+            templateCallerFieldName,
+            checkType<MapNode>("<$runFieldName-element>").unsafeByThrow()
+        ) {
+            val use0 = get<StringNode>("use")
+            val name0 = get<StringNode>("name")
+            val args0 = get<ArrayNode>("args")
+            val call0 = get<StringNode>("call")
+            val name = use0 { it.decodeToEnum(ImportType.values()) }
+            checkError()
+            return@parseBuilder TemplateYML(
+                name.invoke(),
+                name0.invoke().value,
+                args0.invoke().toStringList("<TemplateCaller-args>"),
+                call0.invoke().value
             )
-        return checkType<MapNode>("<$runFieldName-elements>")
-            .runOrThrow { templateYML0 ->
-                val use0 = templateYML0["use"].checkType<StringNode>("<run-elements-use>").runOrThrow {
-                    it.decodeToEnum(ImportType.values())
-                } byThrow templateCallerErr
-                val name0 = templateYML0[nameFieldName].checkType<StringNode>(
-                    "<$runFieldName-elements-$nameFieldName>"
-                ) byThrow templateCallerErr
-                val args0 =
-                    templateYML0["args"].checkType<ArrayNode>("<$runFieldName-elements-args>") byThrow templateCallerErr
-                val call0 = templateYML0["call"].checkType<StringNode>(
-                    "<$runFieldName-elements-call>"
-                ) byThrow templateCallerErr
-                templateCallerErr.isEmpty() || throw templateCallerErr
-                val use = use0.getUnsafe()
-                val name = name0.getUnsafe().value
-                val args = args0.getUnsafe().toStringList("<TemplateCaller-args>")
-                val call = call0.getUnsafe().value
-                return@runOrThrow TemplateYML(
-                    use = use,
-                    name = name,
-                    args = args,
-                    call = call
-                ).checked(pos)
-            }
-    }
+        }
 
     private fun Node.decodeToCondition(): Condition =
-        checkType<MapNode>("<condition-elements>").runOrThrow { conditionObject0 ->
-            val request0 = conditionObject0["request"].checkType<StringNode>("<condition-elements-request>")
-                .unsafeByThrow()
+        parseBuilder(conditionObjectFieldName, checkType<MapNode>("<condition-elements>").getUnsafe()) {
+            val request0 = get<StringNode>("request")
+            val call0 = get<MapNode>("call")
+            checkError()
             val request =
-                when (request0.value) {
+                when (request0.invoke().value) {
                     "if true", "if t", "true" -> Condition.JudgmentMethod.IF_TRUE
                     "if false", "if f", "false" -> Condition.JudgmentMethod.IF_FALSE
                     "else if", "elif", "if" -> Condition.JudgmentMethod.ELSE_IF_TRUE
@@ -310,9 +250,9 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
                     "else", "el" -> Condition.JudgmentMethod.ELSE
                     else -> Condition.JudgmentMethod.NONE
                 }
-            Condition(
+            return@parseBuilder Condition(
                 request,
-                conditionObject0["call"].decodeToTemplateYaml().checked(pos)
+                call0.invoke().decodeToTemplateYaml().checked(pos)
             )
         }
 
@@ -324,7 +264,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
         return this
     }
 
-    private fun TemplateYML.checked(
+    internal fun TemplateYML.checked(
         pos: Pos,
     ) = apply {
         val caller = this.objectTmp ?: throw BeautifulError(

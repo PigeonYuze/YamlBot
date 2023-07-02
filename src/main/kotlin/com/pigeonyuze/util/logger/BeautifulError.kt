@@ -14,8 +14,6 @@ class BeautifulError private constructor(
         errorType: ErrorType, errorAbout: ErrorAbout, vararg causes: ErrorTrace
     ) : this(errorType,errorAbout,causes.toMutableList())
 
-    inline fun <reified E: ErrorTrace> because() = causes.filterIsInstance<E>().isNotEmpty()
-
     @Synchronized
     fun isEmpty() = synchronized(this) {
         causes.isEmpty()
@@ -36,6 +34,11 @@ class BeautifulError private constructor(
 
     }
 
+    operator fun plusAssign(cause: BeautifulError) {
+        synchronized(this) {
+            causes.addAll(cause.causes)
+        }
+    }
     @Synchronized
     fun beautifulStackTrace() : String{
         fun StringBuilder.newLine() = this.append(lineSeparator)

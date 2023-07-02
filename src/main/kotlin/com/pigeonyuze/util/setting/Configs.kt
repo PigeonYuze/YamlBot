@@ -1,14 +1,13 @@
-package com.pigeonyuze
+package com.pigeonyuze.util.setting
 
+import com.pigeonyuze.LoggerManager
+import com.pigeonyuze.YamlBot
 import com.pigeonyuze.YamlBot.reload
 import com.pigeonyuze.account.UserElement
-import com.pigeonyuze.command.element.ImportType
-import com.pigeonyuze.command.element.TemplateYML
 import com.pigeonyuze.listener.EventListener
-import com.pigeonyuze.listener.YamlEventListenerDecoder
 import com.pigeonyuze.listener.impl.Listener.Companion.execute
-import com.pigeonyuze.template.parameterOf
 import com.pigeonyuze.util.decode.CommandConfigDecoder
+import com.pigeonyuze.util.decode.ListenerConfigDecoder
 import com.pigeonyuze.util.logger.BeautifulError
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.yaml.YamlParser
@@ -23,7 +22,7 @@ fun runConfigsReload() {
         UserConfig.reload()
         readCommands()
         LoggerConfig.reload()
-//TODO:        ListenerConfigs.load()
+        readListeners()
         ListenerConfigs.startAllListener()
     }
 }
@@ -72,9 +71,53 @@ private fun readCommands() {
     }
 }
 
+private fun readListeners() {
+    val codes = YamlBot.configFolderPath.resolve("listeners").toFile()
+
+    if (!codes.exists()) {
+        /* WARNING: you must call it form jar! */
+        /* Tip: Don't use Class.getResource(...) , because it never given you a directory file object */
+        /* To get resource directory files, please get it by JarFile */
+        codes.mkdirs()
+
+        val currentJarFile = JarFile(
+            /* Get current jar/class running path */
+            Class.forName("com.pigeonyuze.YamlBot").protectionDomain.codeSource.location.file
+        )
+        val jarFiles = currentJarFile.entries()
+        while (jarFiles.hasMoreElements()) {
+            val jarEntry = jarFiles.nextElement()
+            jarEntry.name.startsWith("default_files/listeners") || continue
+            !jarEntry.isDirectory || continue
+            val outputFile = codes.resolve(jarEntry.name.substringAfterLast('/'))
+            currentJarFile.getInputStream(jarEntry)
+                .copyTo(outputFile.outputStream())
+        }
+        LoggerManager.loggingWarn(
+            "read-listeners",
+            "No commands in 'config/listeners' found! To init with default values and create default files."
+        )
+    }
+
+    require(codes.isDirectory) { "Error: File $codes must be a directory" }
+    val yamlParser = YamlParser()
+    val configLoader = ConfigLoaderBuilder.default()
+        .addParser("yml",yamlParser)
+        .addParser("yaml",yamlParser)
+        .build()
+    for (codeFile in codes.listFiles()!!) {
+        try {
+            ListenerConfigDecoder.handle(configLoader.loadNodeOrThrow(codeFile.path))
+        }catch (e: BeautifulError) {
+            LoggerManager.loggingError(e)
+            continue
+        }
+    }
+}
+
 suspend fun ListenerConfigs.startAllListener() {
     LoggerManager.loggingDebug("startAllListener", "Try to start all listeners...")
-    for ((index, eventListener) in this.listener.withIndex()) {
+    for ((index, eventListener) in listener.withIndex()) {
         eventListener.execute()
         LoggerManager.loggingTrace("startAllListener", "Start listener --> ${eventListener.type}#$index")
     }
@@ -144,21 +187,6 @@ object UserConfig : AutoSavePluginConfig("UserConfig") {
 }
 
 
-object ListenerConfigs : AutoSavePluginConfig(YamlEventListenerDecoder.saveName) {
-    internal var listener: List<EventListener> by value(
-        listOf(
-            //example
-            EventListener(
-                type = "MemberJoinEvent",
-                run = listOf(
-                    TemplateYML(
-                        ImportType.MESSAGE_MANAGER,
-                        "sendMessageToGroup",
-                        parameterOf("%call-group%", "欢迎新人！"),
-                        "only_run"
-                    )
-                )
-            )
-        )
-    )
+object ListenerConfigs {
+    internal var listener: List<EventListener> = arrayListOf()
 }

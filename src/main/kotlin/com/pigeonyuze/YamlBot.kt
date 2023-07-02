@@ -1,6 +1,7 @@
 package com.pigeonyuze
 
 import com.pigeonyuze.command.Command
+import com.pigeonyuze.util.setting.runConfigsReload
 import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription

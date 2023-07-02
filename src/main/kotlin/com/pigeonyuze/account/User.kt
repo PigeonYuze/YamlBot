@@ -1,6 +1,6 @@
 package com.pigeonyuze.account
 
-import com.pigeonyuze.UserConfig
+import com.pigeonyuze.util.setting.UserConfig
 
 @kotlinx.serialization.Serializable
 data class User(val qqId: Long, var name: String, val id: Int) {
