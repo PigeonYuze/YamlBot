@@ -8,6 +8,8 @@ import com.sksamuel.hoplite.*
 import com.sksamuel.hoplite.fp.Validated
 import com.sksamuel.hoplite.fp.invalid
 import com.sksamuel.hoplite.fp.valid
+import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
 
 /**
  * ## 配置文件解析器
@@ -133,17 +135,92 @@ internal abstract class ConfigDecoder<K : Any> {
         }
 
         /**
+         * YAML 1.1 [Reference card](https://yaml.org/refcard.html)
+         *
+         *
+         * Language Independent Scalar types:
+        -    { `~`, `null` }              : Null (no value).
+        -    { `1_230.15`, `12.3015e+02` } : [ Fixed float, Exponential float ]
+        -    { `.inf`, `-.Inf`, `.NAN` }     : [ Infinity (float), Negative, Not a number ]
+        -    { `Y`, `true`, `Yes`, `ON`  }    : Boolean true
+        -    { `n`, `FALSE`, `No`, `off` }    : Boolean false
+         * @param numberValue String value of StringNode
+         *      *(**Must** replace `'_'` to `''`)*
+         * @param nodeClazz Class of object node
+         *      *(**Must** be [PrimitiveNode])*
+         * @param originNode Origin Node
+         * @suppress [N] is not a subclass of [PrimitiveNode]
+         * @return Returns object node or returns null when can not resolve
+         * */
+        @Suppress("UNCHECKED_CAST")
+        private fun <N : Node> asPrimitiveNode(numberValue: String, nodeClazz: KClass<N>, originNode: Node): N? {
+            fun String.inStrings(vararg string: String): Boolean {
+                for (str in string) {
+                    if (equals(str,true))
+                        return true
+                }
+                return false
+            }
+            return when (nodeClazz) {
+                LongNode::class -> LongNode(
+                    when {
+                        /* Hexadecimal int */
+                        numberValue.startsWith("0x") -> numberValue.substring("0x".length).toLongOrNull(16)
+                        numberValue.startsWith("\\u") -> numberValue.substring("\\u".length).toLongOrNull(16)
+                        /* Octal int */
+                        numberValue.startsWith("0") && numberValue.length != 1 -> numberValue.substring("0".length).toLongOrNull(8)
+                        numberValue.startsWith("\\x") -> numberValue.substring("\\x".length).toLongOrNull(8)
+                        /* Decimal int (normal) */
+                        else -> numberValue.toLongOrNull()
+                    } ?: return null, originNode.pos, originNode.path, originNode.meta
+                )
+                DoubleNode::class -> DoubleNode(
+                    when {
+                        /* Not a number */
+                        numberValue.contains("NaN", true) -> Double.NaN
+                        /* Infinity */
+                        numberValue.endsWith(".inf") && numberValue.startsWith("-") -> Double.NEGATIVE_INFINITY
+                        numberValue.endsWith(".inf") -> Double.POSITIVE_INFINITY
+                        else -> numberValue.toDoubleOrNull()
+                    } ?: return null, originNode.pos, originNode.path, originNode.meta
+                )
+                BooleanNode::class -> BooleanNode(
+                    when {
+                        numberValue.inStrings("y","yes","on","true") -> true
+                        numberValue.inStrings("n","no","off","false") -> false
+                        else -> return null
+                    }, originNode.pos, originNode.path, originNode.meta
+                )
+                else -> return null
+            } as? N
+        }
+
+        /**
          * Detect if the type of [Node] is [N]
          *
          * @param name The name of this node. Output it when an error occurs.
          * @param couldMissing Whether to allow [Undefined]
-         *
+         * @param isStrictScalar Is the scalar expression source file strictly distinguish between String and Primitive
+         *                      *(Lax scalar source e.g. YAML)*
          * @return The node as [N] or an error
+         * @see asPrimitiveNode
          * */
         inline fun <reified N : Node> Node.checkType(
-            name: String, couldMissing: Boolean = false,
+            name: String, couldMissing: Boolean = false, isStrictScalar: Boolean = false,
         ): Result<N> {
             this !is N || return this.valid()
+            // WARNING: The Yaml parser sometimes FAILS to read some Primitive Node in the correct format.
+            //   true    : StringNode
+            //   0       : StringNode
+            // The parser may resolve each primitive node to StringNode
+            // That is because YAML Parser cannot know the type when it is defined.
+            // So, Yaml Parser always resolve these to StringNode.
+            if (this is StringNode && N::class.isSubclassOf(PrimitiveNode::class) && !isStrictScalar) {
+                val numberValue = value.replace("_", "")
+                val primitiveNode = asPrimitiveNode(numberValue, N::class, this)
+                if (primitiveNode != null) return primitiveNode.valid()
+            }
+
             val error = if (this == Undefined) { //missing
                 BeautifulError(
                     errorType = ErrorType.READING_CONFIG,
@@ -153,7 +230,8 @@ internal abstract class ConfigDecoder<K : Any> {
                         missingObj = name
                     )
                 ).apply {
-                    if (couldMissing) parsingError += this
+                    if (!couldMissing)
+                        parsingError += this
                 }
             } else {
                 BeautifulError(

@@ -1,17 +1,39 @@
 package com.pigeonyuze.util.logger
 
+import com.pigeonyuze.isDebugging0
 import com.pigeonyuze.util.logger.ErrorType.*
 import net.jcip.annotations.ThreadSafe
+import java.io.PrintStream
+import java.io.PrintWriter
 
 @ThreadSafe
 class BeautifulError private constructor(
-    private val errorType: ErrorType,private val errorAbout: ErrorAbout, val causes: MutableList<ErrorTrace>
+    private val errorType   : ErrorType,
+    private val errorAbout  : ErrorAbout,
+            val causes      : MutableList<ErrorTrace>,
 ) : Throwable() {
     override val message: String get() = beautifulStackTrace()
 
+    override fun printStackTrace(s: PrintStream?) {
+        s != null || return
+        s!!.println(beautifulStackTrace())
+        if (isDebugging0) {
+            for (traceElement in stackTrace)
+                s.println("\tat $traceElement")
+        }
+    }
+
+    override fun printStackTrace(s: PrintWriter?) {
+        s != null || return
+        s!!.println(beautifulStackTrace())
+        if (isDebugging0) {
+            for (traceElement in stackTrace)
+                s.println("\tat $traceElement")
+        }
+    }
 
     constructor(
-        errorType: ErrorType, errorAbout: ErrorAbout, vararg causes: ErrorTrace
+        errorType: ErrorType, errorAbout: ErrorAbout, vararg causes: ErrorTrace,
     ) : this(errorType,errorAbout,causes.toMutableList())
 
     @Synchronized

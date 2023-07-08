@@ -186,7 +186,7 @@ sealed interface Command {
                         "Command-run",
                         "${name[0]} CommandSetting IllegalArgument! $templateCallMap"
                     )
-                    illegalArgument("${templateYML.name} 重复了(${templateYML.use}.${templateYML.call})")
+                    illegalArgument("${templateYML.name} 重复了 在命名域中 ${templateCallMap.keys}\nWith: \n\t$this\n")
                 }
                 templateCallMap[templateYML.name] = null
             }
@@ -530,7 +530,6 @@ sealed interface Command {
          * 反之则返回`null`
          * */
         private inline fun <K> checkCommandName(checkNativeObj: String, shouldBe: String, run: () -> K): K? {
-            println("$checkNativeObj == $shouldBe , by $isPrefixForAll.")
             if (isPrefixForAll) {
                 if (checkNativeObj.startsWith(shouldBe)) {
                     return run.invoke()

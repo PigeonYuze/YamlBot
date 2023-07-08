@@ -57,8 +57,6 @@ object YamlBot : KotlinPlugin(
 }
 
 object BotsTool {
-    val firstBot = runningBots.first()
-
     /**
      * 当 [isRunAllBots] 为 `true`时始终返回`null`
      * */

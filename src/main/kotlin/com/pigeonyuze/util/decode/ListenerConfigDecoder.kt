@@ -1,10 +1,9 @@
 package com.pigeonyuze.util.decode
 
 import com.pigeonyuze.util.setting.ListenerConfigs
-import com.pigeonyuze.command.element.ImportType
-import com.pigeonyuze.command.element.TemplateYML
 import com.pigeonyuze.listener.EventListener
 import com.pigeonyuze.util.decode.CommandConfigDecoder.checked
+import com.pigeonyuze.util.decode.CommandConfigDecoder.decodeToTemplateYaml
 import com.sksamuel.hoplite.*
 import com.sksamuel.hoplite.fp.valid
 import net.mamoe.mirai.event.EventPriority
@@ -44,7 +43,7 @@ internal object ListenerConfigDecoder : ConfigDecoder<EventListener>() {
             val run0 = get<ArrayNode>(runField,true)
 
             val run = run0(listOf()) { value ->
-                value.elements.map { decodeNodeAsTemplateYaml(it).checked(value.pos) }
+                value.elements.map { it.decodeToTemplateYaml().checked(value.pos) }
             }
             val priority = priority0(EventPriority.NORMAL.valid()) { it.decodeToEnum(EventPriority.values()) }
             val readSubclassObjectNames = readSubclassObjectNames0
@@ -82,22 +81,4 @@ internal object ListenerConfigDecoder : ConfigDecoder<EventListener>() {
     private const val isRunningOnceField = "isListenOnce"
     private const val runField = "run"
 
-    //////////////////////////
-    // Tools                //
-    //////////////////////////
-    private fun decodeNodeAsTemplateYaml(mapNode: Node) =
-        parseBuilder("TemplateCaller",mapNode.checkType<MapNode>("<$runField-element>").unsafeByThrow()) {
-            val use0 = get<StringNode>("use")
-            val name0 = get<StringNode>("name")
-            val args0 = get<ArrayNode>("args")
-            val call0 = get<StringNode>("call")
-            val name = use0 { it.decodeToEnum(ImportType.values()) }
-            checkError()
-            return@parseBuilder TemplateYML(
-                name.invoke(),
-                name0.invoke().value,
-                args0.invoke().toStringList("<TemplateCaller-args>"),
-                call0.invoke().value
-            )
-        }
 }

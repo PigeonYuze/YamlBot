@@ -78,7 +78,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
                 .onFailure { isOnlyRun = true }
             val answerContent = get<StringNode>(answerContentField, true)
                 .onFailure { isOnlyRun = true }
-            if (isOnlyRun xor failedRun) {
+            if (isOnlyRun and  failedRun) {
                 throw parsingError.addCause(
                     ErrorTrace.CannotParseAsAnyone(
                         mapping.pos,
@@ -217,7 +217,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
             }
         }
 
-    private fun Node.decodeToTemplateYaml(): TemplateYML =
+    fun Node.decodeToTemplateYaml(): TemplateYML =
         parseBuilder(
             templateCallerFieldName,
             checkType<MapNode>("<$runFieldName-element>").unsafeByThrow()
@@ -226,13 +226,13 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
             val name0 = get<StringNode>("name")
             val args0 = get<ArrayNode>("args")
             val call0 = get<StringNode>("call")
-            val name = use0 { it.decodeToEnum(ImportType.values()) }
+            val type = use0 { it.decodeToEnum(ImportType.values()) }
             checkError()
             return@parseBuilder TemplateYML(
-                name.invoke(),
-                name0.invoke().value,
-                args0.invoke().toStringList("<TemplateCaller-args>"),
-                call0.invoke().value
+                use = type.invoke(),
+                name = name0.invoke().value,
+                args = args0.invoke().toStringList("<TemplateCaller-args>"),
+                call = call0.invoke().value
             )
         }
 
