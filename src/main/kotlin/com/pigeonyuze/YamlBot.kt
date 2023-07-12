@@ -1,6 +1,7 @@
 package com.pigeonyuze
 
 import com.pigeonyuze.command.Command
+import com.pigeonyuze.util.setting.runConfigsReload
 import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
@@ -14,6 +15,8 @@ import net.mamoe.mirai.event.events.MessageEvent
 
 val runningBots: MutableList<Bot> = mutableListOf()
 
+internal var isDebugging0 = false
+
 object YamlBot : KotlinPlugin(
     JvmPluginDescription(
         id = "com.pigeonyuze.yaml-bot",
@@ -23,23 +26,18 @@ object YamlBot : KotlinPlugin(
         author("Pigeon_Yuze")
     }
 ) {
-    private val commandList = mutableListOf<Command>()
+    internal val commandList = mutableListOf<Command>()
 
     override fun onEnable() {
         logger.info("start init")
         runConfigsReload()
 
-        for (command in CommandConfigs.COMMAND) {
-            commandList.add(command.value)
-        }
-
-
         val parentScope = GlobalEventChannel.parentScope(this)
 
         parentScope.subscribeAlways<MessageEvent> {
-            commandList.filter {
-                it.isThis(this.message.contentToString())
-            }.getOrNull(0)?.run(this)
+            commandList
+                .filter { it.isThis(this.message.contentToString()) }
+                .onEach { it.run(this) }
         }
 
         parentScope.subscribeAlways<BotOnlineEvent> {
@@ -52,11 +50,10 @@ object YamlBot : KotlinPlugin(
         }
 
     }
+
 }
 
 object BotsTool {
-    val firstBot = runningBots.first()
-
     /**
      * 当 [isRunAllBots] 为 `true`时始终返回`null`
      * */

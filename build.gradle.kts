@@ -11,20 +11,24 @@ mirai {
 }
 
 group = "com.pigeonyuze"
-version = "1.7.0"
+version = "2.0.0"
 
 
 repositories {
-    maven("https://maven.aliyun.com/repository/public")
     mavenCentral()
+    maven("https://maven.aliyun.com/repository/public")
 }
 
-dependencies{
+dependencies {
     implementation("org.jetbrains.kotlin:kotlin-serialization:1.6.20")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
     // https://mvnrepository.com/artifact/io.github.kasukusakura/silk-codec
     implementation("io.github.kasukusakura:silk-codec:0.0.5")
 
-    implementation("net.mamoe.yamlkt:yamlkt-jvm:0.12.0") //yaml
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    /* For multithreaded functions by annotations */
+    implementation("net.jcip:jcip-annotations:1.0")
+
+    /* From yamlkt to hoplite(from: 2.0.0) */
+    implementation("com.sksamuel.hoplite:hoplite-core:2.7.4")
+    implementation("com.sksamuel.hoplite:hoplite-yaml:2.7.4")
 }

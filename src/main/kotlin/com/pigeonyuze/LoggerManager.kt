@@ -1,18 +1,21 @@
 package com.pigeonyuze
 
+import com.pigeonyuze.util.setting.LoggerConfig
 import kotlinx.coroutines.*
 import net.mamoe.mirai.message.data.ForwardMessageBuilder
 import net.mamoe.mirai.message.data.PlainText
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 @Suppress("UNUSED")
 object LoggerManager : CoroutineScope {
 
-    override val coroutineContext: CoroutineContext = CoroutineExceptionHandler { _, error ->
-        loggingError(error)
-    } + YamlBot.coroutineContext + SupervisorJob(YamlBot.coroutineContext[Job])
+    override val coroutineContext: CoroutineContext =
+        CoroutineExceptionHandler { _, error -> loggingError(error) } +
+                if (!isDebugging0) YamlBot.coroutineContext else EmptyCoroutineContext +
+                        SupervisorJob(if (!isDebugging0) YamlBot.coroutineContext[Job] else null)
 
     private val miraiLogger by lazy { YamlBot.logger }
 
@@ -25,12 +28,20 @@ object LoggerManager : CoroutineScope {
     @JvmStatic
     fun loggingError(from: Any = defaultfrom, message: String?) {
         if (!LoggerConfig.open) return
+        if (isDebugging0) {
+            System.err.println("ERROR ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)} [$from] $message")
+            return
+        }
         miraiLogger.error("[$from] $message")
         trySendLogMessage("ERROR", from.toString(), message ?: "")
     }
 
     fun loggingError(error: Throwable) {
         if (!LoggerConfig.open) return
+        if (isDebugging0) {
+            System.err.println("ERROR ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)} [${error.javaClass.simpleName}] ${error.message ?: ""}")
+            return
+        }
         miraiLogger.error(error)
         trySendLogMessage("ERROR", error.javaClass.simpleName, error.message ?: "")
     }
@@ -39,6 +50,10 @@ object LoggerManager : CoroutineScope {
     @JvmStatic
     fun loggingWarn(from: Any = defaultfrom, message: String?) {
         if (!LoggerConfig.open) return
+        if (isDebugging0) {
+            println("WARN ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)} [$from] $message")
+            return
+        }
         miraiLogger.warning("[$from] $message")
     }
 
@@ -46,6 +61,10 @@ object LoggerManager : CoroutineScope {
     @JvmStatic
     fun loggingInfo(from: Any = defaultfrom, message: String?) {
         if (!LoggerConfig.open) return
+        if (isDebugging0) {
+            println("INFO ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)} [$from] $message")
+            return
+        }
         miraiLogger.info("[$from] $message")
     }
 
@@ -53,6 +72,10 @@ object LoggerManager : CoroutineScope {
     @JvmStatic
     fun loggingDebug(from: Any = defaultfrom, message: String?) {
         if (!LoggerConfig.open) return
+        if (isDebugging0) {
+            println("DEBUG ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)} [$from] $message")
+            return
+        }
         miraiLogger.debug("[$from] $message")
     }
 
@@ -60,6 +83,10 @@ object LoggerManager : CoroutineScope {
     @JvmStatic
     fun loggingTrace(from: Any = defaultfrom, message: String?) {
         if (!LoggerConfig.open) return
+        if (isDebugging0) {
+            println("TRACE ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)} [$from] $message")
+            return
+        }
         miraiLogger.verbose("[$from] $message")
     }
 

@@ -10,7 +10,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.command.descriptor.CommandArgumentParserException
 import net.mamoe.mirai.event.events.MessageEvent
-import net.mamoe.yamlkt.Comment
 
 internal fun illegalArgument(
     message: String,
@@ -20,9 +19,9 @@ internal fun illegalArgument(
 
 @Serializable
 data class Condition(
-    @Comment("选择判断的类型 无需判断传值 none")
+    /**选择判断的类型*/
     val request: JudgmentMethod,
-    @Comment("提供此处获取Boolean")
+    //    @Comment("提供此处获取Boolean")
     val call: TemplateYML?,
 ) {
     @kotlinx.serialization.Transient

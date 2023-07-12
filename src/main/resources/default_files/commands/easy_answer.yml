@@ -1,0 +1,21 @@
+# 简单示例使用 数组 声明指令的方式
+# 自 v2.0.0 以后，在 commands 文件夹下的文件可通过以下声明方式
+# 声明多个指令
+# 如果你需要定义多个自定义回复内容，我们并不建议你通过 `YamlBot` 声明，这无疑是一个庞大的工作量，可尝试通过其他方式实现。
+
+- name: ['/plugin about','#插件详情'] # 一个简单的示范, 不进行条件判断和运行任何东西
+  answeringMethod: 'QUOTE'
+  answerContent: 'Hi YamlBot!\n本 Bot 配置了插件 YamlBot\nYamlBot 是基于 mirai 的一个零基础 Bot 逻辑运行编写\n你可以在 github 上找到它\nhttps://github.com/PigeonYuze/YamlBot/'
+- name: ['/random']
+  answeringMethod: 'SEND_MESSAGE'
+  answerContent: 'Random num: %call-randomResult%'
+  run:
+    - use: BASE
+      call: random
+      name: randomResult
+      args: [0,100]
+- name: ['/give'] # 简单的 ArgCommand 示例
+  answeringMethod: 'AT_SEND'
+  answerContent: 'Got args: %call-arg1%'
+  argsSize: 1
+# And more...

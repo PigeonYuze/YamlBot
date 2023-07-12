@@ -4,7 +4,6 @@ import com.pigeonyuze.BotsTool
 import com.pigeonyuze.YamlBot
 import com.pigeonyuze.command.element.NullObject
 import com.pigeonyuze.command.element.illegalArgument
-import com.pigeonyuze.runConfigsReload
 import com.pigeonyuze.template.Parameter
 import com.pigeonyuze.template.Template
 import com.pigeonyuze.template.TemplateImpl
@@ -12,6 +11,7 @@ import com.pigeonyuze.template.parameterOf
 import com.pigeonyuze.util.FunctionArgsSize
 import com.pigeonyuze.util.SerializerData
 import com.pigeonyuze.util.TempFileManager
+import com.pigeonyuze.util.setting.runConfigsReload
 import io.github.kasukusakura.silkcodec.AudioToSilkCoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async

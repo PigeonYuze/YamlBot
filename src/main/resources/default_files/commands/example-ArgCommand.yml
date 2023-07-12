@@ -1,0 +1,69 @@
+# 关于 ArgCommand 的简单示例
+#  ArgCommand 是一个需要提供参数的指令声明，其他与普通指令无异
+# 以下为获取随机数的写法
+# @see [YamlBot](https://github.com/PigeonYuze/YamlBot/)
+# 以下写法仅适用于 v2.0.0 以后的 `commands` 配置文件夹
+
+
+# 不包含参数部分的调用名称
+name: [ '/random',"#随机数" ]
+
+# 参数的数量 (x>=0)
+#  当不包含此项时，总是会判断为 `NormalCommand`
+argsSize: 3
+
+# 回复信息的方式 可选以下值
+# QUOTE - 引用回复信息
+# SEND_MESSAGE - 直接发送信息
+# AT_SEND - At 触发指令者 并 直接发送信息
+answeringMethod: 'QUOTE'
+
+# 回复的功能，建议使用'\n换行'
+# 可使用 %call-名称% 作为占位符，获取在`run`中定义的常量
+# 同样的 可使用 %call-arg数字% 调用指定序号的参数(从1开始) 如: %call-arg1%
+answerContent: '随机数是: ⌈%call-randomResult%⌋ !\n随机数的范围: %call-arg1%~%call-arg2%'
+
+# 执行操作
+run:
+  - use: BASE # 声明调用函数库
+    call: random # 声明调用函数名
+    name: randomResult # 命名
+    args: [ '%call-arg1%','%call-arg2%','%call-arg3%' ] # 自动解析为对应数据
+
+# 以下为可选参数，你可以直接不在原文中声明
+
+# 执行条件
+condition: [ ]
+
+# 参数分隔符 (默认为' ')
+# 在截取参数时，以此来截取每一个参数
+#  当 此项为空 且 `argsSize`为 1 时，将非指令头部分整体传入
+argsSplit: " "
+
+# 当参数不足时，让发送者提供后续回复补充参数 (默认为`true`)
+# `true` 为开启，`false` 为关闭
+useLaterAddParams: true
+
+# 允许发送者每次补充参数的最大用时，单位为秒 (默认为 60s)
+# 当超过这段时间时，结束进程
+laterAddParamsTimeoutSecond: 30
+
+#对参数的要求
+request:
+  #下标(从零开始): 对应的需要类型
+  0: long # 下标0 需要 纯数字
+  1: long # 下标1 需要 纯数字
+  2: boolean # 下标2 需要 布尔值(true/false)
+
+# 对参数的描述
+describe:
+  #下标(从零开始): 描述内容
+  0: '随机数的最小值(包括该项)'
+  1: '随机数的最大值(包含该项)'
+  2: '是否包含负数(true包含 false不包含)'
+
+# 选择`name`的类型为指令前缀或指令后缀 (默认为`true`)
+isPrefixForAll: true
+
+# 以上即为 ArgCommand 含参数的指令 声明方式
+# 详细文档可见: https://github.com/PigeonYuze/YamlBot/blob/aa6e1b52ca173ddf962947fbaaa2ee4509ada51b/docs/ArgCommandDoc.md
