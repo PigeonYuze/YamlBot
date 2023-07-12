@@ -66,9 +66,6 @@ sealed interface Command {
 
     companion object {
 
-        var commands = listOf<Command>()
-            internal set
-
         private suspend fun Command.runImpl(event: MessageEvent, templateCallName: MutableMap<String, Any?>) {
             LoggerManager.loggingDebug("Command-run", "Start run command.....")
             LoggerManager.loggingTrace("Command-run", "Judgment running condition.")

@@ -1,5 +1,10 @@
 package com.pigeonyuze.util
 
+import com.pigeonyuze.LoggerManager
+import com.pigeonyuze.command.element.TemplateYML
+import java.io.File
+import java.io.IOException
+import java.util.jar.JarFile
 import kotlin.reflect.KClass
 
 
@@ -38,16 +43,16 @@ fun String.listToStringDataToList(dropStart: Int = 0): List<String> {
     else listOf(this)
 }
 
-fun List<String>.makeStringToAny() : List<Any>{
+fun List<String>.makeStringToAny(): List<Any> {
     val ret = mutableListOf<Any>()
     for (element in this) {
-       ret.add(element.toAny())
+        ret.add(element.toAny())
     }
     return ret
 }
 
-fun Map<String,String>.makeStringToAny() : Map<Any,Any>{
-    val ret = mutableMapOf<Any,Any>()
+fun Map<String, String>.makeStringToAny(): Map<Any, Any> {
+    val ret = mutableMapOf<Any, Any>()
     for ((key, value) in this) {
         ret[key.toAny()] = value.toAny()
     }
@@ -95,24 +100,21 @@ fun String.keyAndValueStringDataToMap(drop: Int = 0): Map<String, String> {
 }
 
 
-
-fun Map<*,*>.stringMap() : Map<String,String> {
-    val result = mutableMapOf<String,String>()
-    for ((k,v) in this){
+fun Map<*, *>.stringMap(): Map<String, String> {
+    val result = mutableMapOf<String, String>()
+    for ((k, v) in this) {
         result[k.toString()] = v.toString()
     }
     return result
 }
 
-fun List<*>.stringList() : MutableList<String>{
+fun List<*>.stringList(): MutableList<String> {
     val result = mutableListOf<String>()
     for (value in this) {
         result.add(value.toString())
     }
     return result
 }
-
-
 
 
 fun String.isLong() = this.toLongOrNull() != null
@@ -132,4 +134,62 @@ val KClass<*>.isObject get() = this.objectInstance != null
 fun String.isBoolean() = this.toBooleanStrictOrNull() != null
 
 fun String.dropFirstAndLast() = this.substring(1, length - 1)
+
+/**
+ * Copy the file whose file name starts with [fileName] to [toFile]
+ *
+ * *Support copying directory*
+ *
+ * @see File.copyRecursively
+ * */
+fun copyJarFileImpl(
+    toFile: File,
+    fileName: String,
+    onErrorAction: (File, Throwable) -> OnErrorAction = { _, e -> throw e },
+    isOverwrite: Boolean = false,
+): Boolean {
+    if (!isOverwrite && toFile.exists()) {
+        return onErrorAction(toFile, FileAlreadyExistsException(toFile)) != OnErrorAction.TERMINATE
+    }
+    val currentJarFile = JarFile(
+        /* Get current jar/class running path */
+        Class.forName("com.pigeonyuze.YamlBot").protectionDomain.codeSource.location.file
+    )
+    val jarFiles = currentJarFile.entries()
+
+    while (jarFiles.hasMoreElements()) {
+        val jarEntry = jarFiles.nextElement()
+        jarEntry.name.startsWith(fileName) || continue // Skip file
+        LoggerManager.loggingTrace(
+            "CopyJarFiles",
+            "Copying file: ${jarEntry.name} with size ${jarEntry.size}(in ${currentJarFile.name})"
+        )
+        val outputFile = toFile.resolve(jarEntry.name.substringAfterLast('/'))
+        try {
+            if (jarEntry.isDirectory) {
+                outputFile.mkdirs()
+            } else {
+                currentJarFile.getInputStream(jarEntry).use { inputStream ->
+                    outputFile.outputStream().use { outputStream ->
+                        if (inputStream.copyTo(outputStream) < jarEntry.size)
+                            if (onErrorAction(
+                                    outputFile,
+                                    IOException("Source file wasn't copied completely, length of destination file differs.")
+                                )
+                                == OnErrorAction.TERMINATE
+                            )
+                                return false
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            if (onErrorAction(outputFile, e) == OnErrorAction.TERMINATE)
+                return false
+        }
+    }
+    return true
+}
+
+fun TemplateYML.containsFormat()
+    = this.args.any { it.startsWith("%call-") && it.endsWith("%") }
 

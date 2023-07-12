@@ -6,9 +6,10 @@
 
 
 # 不包含参数部分的调用名称
-name: ['/random',"#随机数"]
+name: [ '/random',"#随机数" ]
 
-# 参数的数量 (x>=0) 当不包含此项时，总是会判断为 `NormalCommand`
+# 参数的数量 (x>=0)
+#  当不包含此项时，总是会判断为 `NormalCommand`
 argsSize: 3
 
 # 回复信息的方式 可选以下值
@@ -27,12 +28,12 @@ run:
   - use: BASE # 声明调用函数库
     call: random # 声明调用函数名
     name: randomResult # 命名
-    arg: ['%call-arg1%','%call-arg2%','%call-arg3%'] # 自动解析为对应数据
+    args: [ '%call-arg1%','%call-arg2%','%call-arg3%' ] # 自动解析为对应数据
 
 # 以下为可选参数，你可以直接不在原文中声明
 
 # 执行条件
-condition: []
+condition: [ ]
 
 # 参数分隔符 (默认为' ')
 # 在截取参数时，以此来截取每一个参数
@@ -66,6 +67,3 @@ isPrefixForAll: true
 
 # 以上即为 ArgCommand 含参数的指令 声明方式
 # 详细文档可见: https://github.com/PigeonYuze/YamlBot/blob/aa6e1b52ca173ddf962947fbaaa2ee4509ada51b/docs/ArgCommandDoc.md
-
-
-

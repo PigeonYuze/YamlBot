@@ -20,7 +20,7 @@ internal object ListenerConfigDecoder : ConfigDecoder<EventListener>() {
     override val instanceObj: String by lazy { "EventListener" }
 
     override fun handle(objects: ArrayList<EventListener>) {
-        ListenerConfigs.listener = objects
+        ListenerConfigs.listener.addAll(objects)
     }
 
     override fun parseImpl(mapNode: MapNode): EventListener {

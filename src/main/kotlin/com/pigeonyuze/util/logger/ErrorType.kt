@@ -42,7 +42,7 @@ sealed class ErrorTrace {
 
     data class FunctionThrowError(override val trace: Pos,private val error: Throwable): ErrorTrace() {
         override val errorTraceString: String
-            by lazy { "Function '${error.stackTrace[0].methodName}' throws error(${error::class.simpleName}: '${error.message}')" }
+            by lazy { "Function '${error.stackTrace[0].methodName}'(in ${error.stackTrace[0].className.substringAfterLast('.')}) throws ${error::class}\n\t\t\t> ${error.message}" }
     }
 
     data class CannotParseAsAnyone(override val trace: Pos,private val cause: String): ErrorTrace() {

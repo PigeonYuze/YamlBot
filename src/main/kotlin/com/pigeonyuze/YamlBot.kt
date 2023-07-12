@@ -26,21 +26,18 @@ object YamlBot : KotlinPlugin(
         author("Pigeon_Yuze")
     }
 ) {
-    private val commandList = mutableListOf<Command>()
+    internal val commandList = mutableListOf<Command>()
 
     override fun onEnable() {
         logger.info("start init")
         runConfigsReload()
 
-        commandList.clear()
-        commandList.addAll(Command.commands)
-
         val parentScope = GlobalEventChannel.parentScope(this)
 
         parentScope.subscribeAlways<MessageEvent> {
-            commandList.filter {
-                it.isThis(this.message.contentToString())
-            }.getOrNull(0)?.run(this)
+            commandList
+                .filter { it.isThis(this.message.contentToString()) }
+                .onEach { it.run(this) }
         }
 
         parentScope.subscribeAlways<BotOnlineEvent> {

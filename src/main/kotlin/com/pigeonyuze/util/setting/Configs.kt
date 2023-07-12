@@ -6,6 +6,7 @@ import com.pigeonyuze.YamlBot.reload
 import com.pigeonyuze.account.UserElement
 import com.pigeonyuze.listener.EventListener
 import com.pigeonyuze.listener.impl.Listener.Companion.execute
+import com.pigeonyuze.util.copyJarFileImpl
 import com.pigeonyuze.util.decode.CommandConfigDecoder
 import com.pigeonyuze.util.decode.ListenerConfigDecoder
 import com.pigeonyuze.util.logger.BeautifulError
@@ -15,7 +16,6 @@ import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.ValueDescription
 import net.mamoe.mirai.console.data.value
-import java.util.jar.JarFile
 
 fun runConfigsReload() {
     runBlocking {
@@ -27,92 +27,83 @@ fun runConfigsReload() {
     }
 }
 
+val configLoader by lazy {
+    val yamlParser = YamlParser()
+    ConfigLoaderBuilder.default()
+        .addParser("yml", yamlParser)
+        .addParser("yaml", yamlParser)
+        .build()
+}
+
 private fun readCommands() {
     val codes = YamlBot.configFolderPath.resolve("command").toFile()
 
     if (!codes.exists()) {
-        /* WARNING: you must call it form jar! */
-        /* Tip: Don't use Class.getResource(...) , because it never given you a directory file object */
-        /* To get resource directory files, please get it by JarFile */
-        codes.mkdirs()
-
-        val currentJarFile = JarFile(
-            /* Get current jar/class running path */
-            Class.forName("com.pigeonyuze.YamlBot").protectionDomain.codeSource.location.file
-        )
-        val jarFiles = currentJarFile.entries()
-        while (jarFiles.hasMoreElements()) {
-            val jarEntry = jarFiles.nextElement()
-            jarEntry.name.startsWith("default_files/commands") || continue
-            !jarEntry.isDirectory || continue
-            val outputFile = codes.resolve(jarEntry.name.substringAfterLast('/'))
-            currentJarFile.getInputStream(jarEntry)
-                .copyTo(outputFile.outputStream())
-        }
         LoggerManager.loggingWarn(
             "read-commands",
             "No commands in 'config/commands' found! To init with default values and create default files."
         )
+        copyJarFileImpl(
+            codes, "default_files/commands",
+            { file, throwable ->
+                LoggerManager.loggingError("CopyConfigs", "Error in copy file: ${file.name}")
+                LoggerManager.loggingError(throwable)
+                OnErrorAction.SKIP
+            }
+        )
     }
 
     require(codes.isDirectory) { "Error: File $codes must be a directory" }
-    val yamlParser = YamlParser()
-    val configLoader = ConfigLoaderBuilder.default()
-        .addParser("yml",yamlParser)
-        .addParser("yaml",yamlParser)
-        .build()
+    var failure = 0
     for (codeFile in codes.listFiles()!!) {
         try {
             CommandConfigDecoder.handle(configLoader.loadNodeOrThrow(codeFile.path))
-        }catch (e: BeautifulError) {
-            LoggerManager.loggingError(e)
+        } catch (e: BeautifulError) {
+            failure++
+            LoggerManager.loggingError("CommandParser", e.beautifulStackTrace())
             continue
         }
     }
+    LoggerManager.loggingInfo(
+        "read-commands",
+        "Finishes parsing. Success parsing target counts: ${YamlBot.commandList.size} (Failure: $failure)"
+    )
 }
+
 
 private fun readListeners() {
     val codes = YamlBot.configFolderPath.resolve("listeners").toFile()
 
     if (!codes.exists()) {
-        /* WARNING: you must call it form jar! */
-        /* Tip: Don't use Class.getResource(...) , because it never given you a directory file object */
-        /* To get resource directory files, please get it by JarFile */
-        codes.mkdirs()
-
-        val currentJarFile = JarFile(
-            /* Get current jar/class running path */
-            Class.forName("com.pigeonyuze.YamlBot").protectionDomain.codeSource.location.file
-        )
-        val jarFiles = currentJarFile.entries()
-        while (jarFiles.hasMoreElements()) {
-            val jarEntry = jarFiles.nextElement()
-            jarEntry.name.startsWith("default_files/listeners") || continue
-            !jarEntry.isDirectory || continue
-            val outputFile = codes.resolve(jarEntry.name.substringAfterLast('/'))
-            currentJarFile.getInputStream(jarEntry)
-                .copyTo(outputFile.outputStream())
-        }
         LoggerManager.loggingWarn(
             "read-listeners",
             "No commands in 'config/listeners' found! To init with default values and create default files."
         )
+        copyJarFileImpl(codes, "default_files/listener",
+            { file, throwable ->
+                LoggerManager.loggingError("CopyConfigs", "Error in copy file: ${file.name}")
+                LoggerManager.loggingError(throwable)
+                OnErrorAction.SKIP
+            })
+        LoggerManager.loggingDebug("read-listeners", "Finishes copying...")
     }
 
     require(codes.isDirectory) { "Error: File $codes must be a directory" }
-    val yamlParser = YamlParser()
-    val configLoader = ConfigLoaderBuilder.default()
-        .addParser("yml",yamlParser)
-        .addParser("yaml",yamlParser)
-        .build()
+    var failure = 0
     for (codeFile in codes.listFiles()!!) {
         try {
             ListenerConfigDecoder.handle(configLoader.loadNodeOrThrow(codeFile.path))
-        }catch (e: BeautifulError) {
-            LoggerManager.loggingError(e)
+        } catch (e: BeautifulError) {
+            LoggerManager.loggingError("ListenerParser", e.beautifulStackTrace())
+            failure++
             continue
         }
     }
+    LoggerManager.loggingInfo(
+        "read-listeners",
+        "Finishes parsing. Success parsing target counts: ${ListenerConfigs.listener.size} (Failure: $failure)"
+    )
+
 }
 
 suspend fun ListenerConfigs.startAllListener() {
@@ -188,5 +179,5 @@ object UserConfig : AutoSavePluginConfig("UserConfig") {
 
 
 object ListenerConfigs {
-    internal var listener: List<EventListener> = arrayListOf()
+    internal var listener: ArrayList<EventListener> = arrayListOf()
 }

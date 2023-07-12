@@ -1,5 +1,6 @@
 package com.pigeonyuze.util.decode
 
+import com.pigeonyuze.YamlBot
 import com.pigeonyuze.command.Command
 import com.pigeonyuze.command.Command.*
 import com.pigeonyuze.command.element.AnsweringMethod
@@ -7,15 +8,13 @@ import com.pigeonyuze.command.element.Condition
 import com.pigeonyuze.command.element.ImportType
 import com.pigeonyuze.command.element.TemplateYML
 import com.pigeonyuze.isDebugging0
-import com.pigeonyuze.util.SerializerData
+import com.pigeonyuze.util.containsFormat
+import com.pigeonyuze.util.decode.CommandConfigDecoder.checked
 import com.pigeonyuze.util.logger.BeautifulError
-import com.pigeonyuze.util.logger.ErrorAbout
 import com.pigeonyuze.util.logger.ErrorTrace
-import com.pigeonyuze.util.logger.ErrorType
 import com.sksamuel.hoplite.*
 import com.sksamuel.hoplite.fp.Validated
 import com.sksamuel.hoplite.fp.valid
-import kotlinx.coroutines.launch
 
 /**
  * 针对 [Command] 的解析器
@@ -33,7 +32,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
         if (isDebugging0) {
             println(objects)
         } else {
-            Command.commands = objects
+           YamlBot.commandList.addAll(objects)
         }
     }
 
@@ -267,6 +266,12 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
     internal fun TemplateYML.checked(
         pos: Pos,
     ) = apply {
+        /* Can not replace format to value when never call it. */
+        /* If run template, may throw error, but it should not throw error */
+        if (containsFormat()) {
+            return@apply
+        }
+        /* Don't run function...
         val caller = this.objectTmp ?: throw BeautifulError(
             errorType = ErrorType.RUNNING_FUNCTION,
             errorAbout = ErrorAbout.ByInstance("TemplateCaller"),
@@ -275,7 +280,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
         caller.launch {
             try {
                 if (caller::class.annotations.filterIsInstance<SerializerData>().isEmpty())
-                    caller.execute(parameter) // Don't run function with SerializerData,it may throw error because wrong args.
+                    caller.execute(parameter)
             } catch (e: Throwable) {
                 throw BeautifulError(
                     errorType = ErrorType.RUNNING_FUNCTION,
@@ -284,6 +289,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
                 ).apply { addSuppressed(e) }
             }
         }
+        */
     }
 
 }
