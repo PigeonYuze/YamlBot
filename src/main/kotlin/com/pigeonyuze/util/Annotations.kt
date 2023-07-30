@@ -49,3 +49,11 @@ annotation class DslEventTemplateBuilder
 
 @DslMarker
 annotation class DslTemplateBuilder
+
+@Target(AnnotationTarget.FUNCTION)
+@RequiresOptIn(
+    level = RequiresOptIn.Level.WARNING
+)
+annotation class RememberCallFunction(
+    val callFunction: ReplaceWith = ReplaceWith("")
+)
