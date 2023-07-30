@@ -1,6 +1,7 @@
 package com.pigeonyuze
 
 import com.pigeonyuze.command.Command
+import com.pigeonyuze.util.decode.GlobalFieldPool
 import com.pigeonyuze.util.setting.runConfigsReload
 import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.Bot
@@ -31,7 +32,7 @@ object YamlBot : KotlinPlugin(
     override fun onEnable() {
         logger.info("start init")
         runConfigsReload()
-
+        GlobalFieldPool.getGlobalFieldPool().free()
         val parentScope = GlobalEventChannel.parentScope(this)
 
         parentScope.subscribeAlways<MessageEvent> {

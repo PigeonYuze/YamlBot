@@ -1,9 +1,10 @@
 package com.pigeonyuze.util.decode
 
-import com.pigeonyuze.util.setting.ListenerConfigs
 import com.pigeonyuze.listener.EventListener
-import com.pigeonyuze.util.decode.CommandConfigDecoder.checked
+import com.pigeonyuze.util.RememberCallFunction
 import com.pigeonyuze.util.decode.CommandConfigDecoder.decodeToTemplateYaml
+import com.pigeonyuze.util.decode.FormatField.Companion.ofField
+import com.pigeonyuze.util.setting.ListenerConfigs
 import com.sksamuel.hoplite.*
 import com.sksamuel.hoplite.fp.valid
 import net.mamoe.mirai.event.EventPriority
@@ -30,6 +31,7 @@ internal object ListenerConfigDecoder : ConfigDecoder<EventListener>() {
     //////////////////////////
     // Impl functions      ///
     //////////////////////////
+    @OptIn(RememberCallFunction::class)
     private fun impl(mapNode: MapNode): EventListener =
         parseBuilder("EventListener",mapNode) {
             val type0 = get<StringNode>(typeField)
@@ -43,7 +45,10 @@ internal object ListenerConfigDecoder : ConfigDecoder<EventListener>() {
             val run0 = get<ArrayNode>(runField,true)
 
             val run = run0(listOf()) { value ->
-                value.elements.map { it.decodeToTemplateYaml().checked(value.pos) }
+                value.elements.map { element ->
+                    element.decodeToTemplateYaml()
+                        .also { GlobalFieldPool.getGlobalFieldPool().intoPool(it.ofField(mapNode), mapNode) }
+                }
             }
             val priority = priority0(EventPriority.NORMAL.valid()) { it.decodeToEnum(EventPriority.values()) }
             val readSubclassObjectNames = readSubclassObjectNames0

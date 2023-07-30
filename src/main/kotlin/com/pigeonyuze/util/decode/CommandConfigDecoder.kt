@@ -8,8 +8,9 @@ import com.pigeonyuze.command.element.Condition
 import com.pigeonyuze.command.element.ImportType
 import com.pigeonyuze.command.element.TemplateYML
 import com.pigeonyuze.isDebugging0
+import com.pigeonyuze.util.RememberCallFunction
 import com.pigeonyuze.util.containsFormat
-import com.pigeonyuze.util.decode.CommandConfigDecoder.checked
+import com.pigeonyuze.util.decode.FormatField.Companion.ofField
 import com.pigeonyuze.util.logger.BeautifulError
 import com.pigeonyuze.util.logger.ErrorTrace
 import com.sksamuel.hoplite.*
@@ -32,7 +33,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
         if (isDebugging0) {
             println(objects)
         } else {
-           YamlBot.commandList.addAll(objects)
+            YamlBot.commandList.addAll(objects)
         }
     }
 
@@ -63,6 +64,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
      *
      * - Else, it will throw [BeautifulError]
      * */
+    @OptIn(RememberCallFunction::class)
     private fun normalCommandOrOnlyRunCommand(mapping: MapNode): Command =
         parseBuilder("Command & OnlyRunCommand", mapping) {
             var failedRun = false
@@ -77,7 +79,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
                 .onFailure { isOnlyRun = true }
             val answerContent = get<StringNode>(answerContentField, true)
                 .onFailure { isOnlyRun = true }
-            if (isOnlyRun and  failedRun) {
+            if (isOnlyRun and failedRun) {
                 throw parsingError.addCause(
                     ErrorTrace.CannotParseAsAnyone(
                         mapping.pos,
@@ -91,7 +93,10 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
             checkError()
 
             val run = run0.invoke(listOf()) { array ->
-                array.elements.map { it.decodeToTemplateYaml() }
+                array.elements.map { element ->
+                    element.decodeToTemplateYaml()
+                        .also { GlobalFieldPool.getGlobalFieldPool().intoPool(it.ofField(mapping), mapping) }
+                }
             }
             val condition = condition0(listOf()) { array ->
                 array.elements.map { it.decodeToCondition() }
@@ -108,6 +113,7 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
      * Parsed as an ArgCommand object
      * @return It will return parsed object. If node **missing** `argSize`, it will return `null`
      * */
+    @OptIn(RememberCallFunction::class)
     private fun argCommand(mapping: MapNode): ArgCommand? =
         parseBuilder("ArgCommand", mapping) {
             val argSize = mapping[argSizeFieldName].checkType<LongNode>(argSizeFieldName).onFailureInline {
@@ -136,7 +142,10 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
                 answeringMethod = answeringMethod,
                 answerContent = answerContent0.unsafeByThrow().value,
                 run = run0(listOf()) { elements ->
-                    elements.elements.map { it.decodeToTemplateYaml() }
+                    elements.elements.map { element ->
+                        element.decodeToTemplateYaml()
+                            .also { GlobalFieldPool.getGlobalFieldPool().intoPool(it.ofField(mapping), mapping) }
+                    }
                 },
                 condition = condition0(listOf()) { elements ->
                     elements.elements.map { it.decodeToCondition() }
@@ -216,6 +225,17 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
             }
         }
 
+    /**
+     * 请手动实现  [GlobalFieldPool] 的加入
+     * ## 例如:
+     * ```kotlin
+     * val it: TemplateYML = ...;
+     * GlobalFieldPool.getGlobalFieldPool().intoPool(it.ofField(mapping), mapping)
+     * ```
+     * */
+    @RememberCallFunction(
+        ReplaceWith("GlobalFieldPool.getGlobalFieldPool().intoPool(field, mapping)")
+    )
     fun Node.decodeToTemplateYaml(): TemplateYML =
         parseBuilder(
             templateCallerFieldName,
@@ -235,6 +255,12 @@ internal object CommandConfigDecoder : ConfigDecoder<Command>() {
             )
         }
 
+    /**
+     * 无命名域
+     *
+     * 不需实现 [FormatField] 与 [GlobalFieldPool] 的实现
+     * */
+    @OptIn(RememberCallFunction::class)
     private fun Node.decodeToCondition(): Condition =
         parseBuilder(conditionObjectFieldName, checkType<MapNode>("<condition-elements>").getUnsafe()) {
             val request0 = get<StringNode>("request")
